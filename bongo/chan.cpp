@@ -171,7 +171,8 @@ size_t select(select_case const* cases, size_t size) {
   }
 
   // Generate poll order
-  size_type pollorder[n]{0};
+  size_type pollorder[n];
+  std::fill(pollorder, pollorder + n, 0);
   size_type norder = 0;
   for (size_type i = 0; i < size; ++i) {
     if (cases[i].direction == select_default || cases[i].chan == nullptr) {

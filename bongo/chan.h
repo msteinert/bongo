@@ -392,7 +392,7 @@ void operator<<(T& value, chan<T>& c) {
 template <typename T>
 void operator<<(T& value, chan<T>* c) {
   if (c) {
-    auto v = c.recv();
+    auto v = c->recv();
     value = v ? std::move(*v) : T{};
   } else {
     detail::this_thread().forever_sleep();
