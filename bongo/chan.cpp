@@ -13,11 +13,14 @@
 namespace bongo {
 namespace {
 
-thread_local std::mt19937 gen = std::mt19937{std::random_device{}()};
+std::mt19937& gen() {
+  thread_local std::mt19937 val = std::mt19937{std::random_device{}()};
+  return val;
+}
 
 template <typename T>
 T randn(T n) {
-  return std::uniform_int_distribution<T>{0, n}(gen);
+  return std::uniform_int_distribution<T>{0, n}(gen());
 }
 
 void sellock(select_case const* cases, size_t* lockorder, size_t n) noexcept {
@@ -31,7 +34,7 @@ void sellock(select_case const* cases, size_t* lockorder, size_t n) noexcept {
   }
 }
 
-void selunlock(select_case const* cases, size_t* lockorder, size_t n) noexcept {
+void selunlock(select_case const* cases, size_t* lockorder, int n) noexcept {
   for (int i = n - 1; i >= 0; --i) {
     auto* c = cases[lockorder[i]].chan;
     if (i > 0 && c == cases[lockorder[i - 1]].chan) {

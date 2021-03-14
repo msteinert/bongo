@@ -123,9 +123,9 @@ class value_context : public context {
       , key_{std::move(key)}
       , value_{std::move(value)} {}
 
-  virtual std::optional<std::chrono::system_clock::time_point> deadline() { return parent_.deadline(); }
+  std::optional<std::chrono::system_clock::time_point> deadline() override { return parent_.deadline(); }
   chan<std::monostate>* done() override { return parent_.done(); }
-  std::exception_ptr err() { return parent_.err(); }
+  std::exception_ptr err() override { return parent_.err(); }
   std::any value(std::string const& k) override {
     return k == key_ ? value_ : parent_.value(k);
   }

@@ -436,19 +436,19 @@ TEST_CASE("Select stress", "[chan]") {
 
 TEST_CASE("Select fairness", "[chan]") {
   int const trials = 10000;
-  auto c1 = bongo::chan<std::byte>(trials + 1);
-  auto c2 = bongo::chan<std::byte>(trials + 1);
+  auto c1 = bongo::chan<int>(trials + 1);
+  auto c2 = bongo::chan<int>(trials + 1);
   for (int i = 0; i < trials; ++i) {
-    c1 << std::byte{1};
-    c2 << std::byte{2};
+    c1 << 1;
+    c2 << 2;
   }
-  auto c3 = bongo::chan<std::byte>();
-  auto c4 = bongo::chan<std::byte>();
-  auto out = bongo::chan<std::byte>();
-  auto done = bongo::chan<std::byte>();
+  auto c3 = bongo::chan<int>();
+  auto c4 = bongo::chan<int>();
+  auto out = bongo::chan<int>();
+  auto done = bongo::chan<int>();
   auto t = std::thread{[&]() {
     while (true) {
-      std::optional<std::byte> b;
+      std::optional<int> b;
       switch (bongo::select({
         bongo::recv_select_case(c3, b),
         bongo::recv_select_case(c4, b),
@@ -458,7 +458,7 @@ TEST_CASE("Select fairness", "[chan]") {
       default:
         break;
       }
-      std::optional<std::byte> d;
+      std::optional<int> d;
       switch (bongo::select({
         bongo::send_select_case(out, std::move(b.value())),
         bongo::recv_select_case(done, d),
@@ -472,13 +472,13 @@ TEST_CASE("Select fairness", "[chan]") {
   }};
   int cnt1 = 0, cnt2 = 0;
   for (int i = 0; i < trials; ++i) {
-    std::byte b;
+    int b;
     b << out;
     switch (b) {
-    case std::byte{1}:
+    case 1:
       ++cnt1;
       break;
-    case std::byte{2}:
+    case 2:
       ++cnt2;
       break;
     default:

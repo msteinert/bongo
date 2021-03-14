@@ -19,8 +19,6 @@ if(ENABLE_CLANG_TIDY)
     bugprone-*
     cert-*
     clang-analyzer-*
-    modernize-*
-    performance-*
     portability-*)
   list(JOIN CLANG_TIDY_CHECKS "," __clang_tidy_checks)
   set(CMAKE_CXX_CLANG_TIDY ${CLANG_TIDY} -checks=${__clang_tidy_checks})
