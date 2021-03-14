@@ -1,0 +1,111 @@
+stages:
+  - test
+  - deploy-recipe
+  - deploy-package
+
+cdash-clang-tidy:
+  stage: test
+  image: docker.exegy.net/exegy/centos7-clang8:20200204.1032
+  script:
+    - conan config install https://repos.exegy.net/artifactory/generic-dev-support/conan_config.zip
+    - . /opt/exegy/llvm-8/enable
+    - mkdir build && cd build
+    - conan install -p clang-8 ..
+    - CC=clang CXX=clang++ ctest -VV -D CTEST_SOURCE_DIRECTORY:STRING=.. -D CTEST_BINARY_DIRECTORY:STRING=. -S ../cmake/scripts/ClangTidy.cmake
+  only:
+    - master
+
+cdash-coverage:
+  stage: test
+  image: docker.exegy.net/exegy/centos8:20200528.1230
+  script:
+    - conan config install https://repos.exegy.net/artifactory/generic-dev-support/conan_config.zip
+    - mkdir build && cd build
+    - conan install -p gcc-8.libstdc++11 ..
+    - ctest -VV -D CTEST_SOURCE_DIRECTORY:STRING=.. -D CTEST_BINARY_DIRECTORY:STRING=. -S ../cmake/scripts/Coverage.cmake
+  only:
+    - master
+
+cdash-asan:
+  stage: test
+  image: docker.exegy.net/exegy/centos8:20200528.1230
+  script:
+    - conan config install https://repos.exegy.net/artifactory/generic-dev-support/conan_config.zip
+    - mkdir build && cd build
+    - conan install -p gcc-8.libstdc++11 ..
+    - ctest -VV -D CTEST_SOURCE_DIRECTORY:STRING=.. -D CTEST_BINARY_DIRECTORY:STRING=. -S ../cmake/scripts/Asan.cmake
+  only:
+    - master
+
+build-cent7-clang8:
+  stage: test
+  image: docker.exegy.net/exegy/centos7-clang8:20200204.1032
+  script:
+    - . /opt/exegy/llvm-8/enable
+    - mkdir build && cd build
+    - conan install -p clang-8 ..
+    - CC=clang CXX=clang++ cmake -GNinja ..
+    - ninja
+    - ctest --output-on-failure
+  except:
+    - master
+
+build-cent7-gcc7:
+  stage: test
+  image: docker.exegy.net/exegy/centos7-gcc7:20200204.1032
+  script:
+    - . /opt/rh/devtoolset-7/enable
+    - mkdir build && cd build
+    - conan install -p gcc-7 ..
+    - cmake -GNinja ..
+    - ninja
+    - ctest --output-on-failure
+  except:
+    - master
+
+build-cent7-gcc8:
+  stage: test
+  image: docker.exegy.net/exegy/centos7-gcc8:20200313.1020
+  script:
+    - . /opt/rh/devtoolset-8/enable
+    - conan config install https://repos.exegy.net/artifactory/generic-dev-support/conan_config.zip
+    - mkdir build && cd build
+    - conan install -p gcc-8 ..
+    - cmake -GNinja ..
+    - ninja
+    - ctest --output-on-failure
+  except:
+    - master
+
+build-cent8-gcc8:
+  stage: test
+  image: docker.exegy.net/exegy/centos8:20200528.1230
+  script:
+    - conan config install https://repos.exegy.net/artifactory/generic-dev-support/conan_config.zip
+    - mkdir build && cd build
+    - conan install -p gcc-8.libstdc++11 ..
+    - cmake -GNinja ..
+    - ninja
+    - ctest --output-on-failure
+  except:
+    - master
+
+deploy-recipe:
+  stage: deploy-recipe
+  image: docker.exegy.net/exegy/centos7-gcc7:20200204.1032
+  script:
+    - conan export . exegy/stable
+    - conan upload -c -r exegy 'bongo/*'
+  only:
+    - master
+
+deploy-cent8-gcc8:
+  stage: deploy-package
+  image: docker.exegy.net/exegy/centos8:20200528.1230
+  script:
+    - conan config install https://repos.exegy.net/artifactory/generic-dev-support/conan_config.zip
+    - conan create -p gcc-8.libstdc++11 . exegy/stable
+    - conan create -p gcc-8.libstdc++11.debug . exegy/stable
+    - conan upload --all -c -r exegy 'bongo/*' -no recipe
+  only:
+    - master
