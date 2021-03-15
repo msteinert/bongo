@@ -34,7 +34,7 @@ message over an unbuffered channel from one thread to another:
 using namespace std::string_literals;
 
 int main() {
-  bongo::chan<std::sring> c;
+  bongo::chan<std::string> c;
 
   auto t = std::thread{[&]() {
     c << "Golang Rules!"s;
@@ -62,8 +62,7 @@ Select is implemented in a similar fashion as [Select][] found in the
 using namespace std::string_literals;
 
 int main() {
-  bongo::chan<std::sring> c0;
-  bongo::chan<std::sring> c1;
+  bongo::chan<std::string> c0, c1;
 
   auto t0 = std::thread{[&]() {
     c0 << "one"s;
