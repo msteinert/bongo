@@ -24,13 +24,22 @@ class BongoConan(ConanFile):
     version = version()
     license = 'No License'
     url = 'https://engrepo.exegy.net/exegy/bongo'
-    description = 'Generally useful C++ interfaces for Linux systems'
+    description = 'A port of some APIs from Go to C++'
     generators = 'cmake'
+    settings = 'os', 'compiler', 'build_type', 'arch'
     scm = {
         'type': 'git',
         'url': 'https://engrepo.exegy.net/exegy/bongo.git',
         'revision': 'auto',
     }
+    options = {
+        'shared': [True, False],
+        'fPIC': [True, False],
+    }
+    default_options = (
+        'shared=False',
+        'fPIC=True',
+    )
     build_requires = (
         'Catch2/2.9.2@catchorg/stable',
     )
@@ -49,4 +58,4 @@ class BongoConan(ConanFile):
         cmake.install()
 
     def package_info(self):
-        self.info.header_only()
+        self.cpp_info.libs = ['bongo']

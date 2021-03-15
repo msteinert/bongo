@@ -1,0 +1,15 @@
+@PACKAGE_INIT@
+
+set_and_check(BONGO_INCLUDE_DIR "@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@")
+set_and_check(BONGO_CONFIG_DIR "@PACKAGE_CMAKE_INSTALL_CONFIGDIR@")
+set(BONGO_PREFIX_DIR "${PACKAGE_PREFIX_DIR}")
+
+if(NOT TARGET Exegy::bongo)
+  include("${BONGO_CONFIG_DIR}/bongo-targets.cmake")
+endif()
+
+set(BONGO_LIBRARIES Exegy::bongo)
+
+if(NOT bongo_FIND_QUIETLY)
+  message(STATUS "Found bongo: ${BONGO_PREFIX_DIR}")
+endif()
