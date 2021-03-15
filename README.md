@@ -139,7 +139,7 @@ int main() {
     wg.add();
     threads.emplace_back([&](int i) {
       std::cout << fmt::format("Worker {} starting\n", i);
-      std::this_thread::sleep_for(1sec);
+      std::this_thread::sleep_for(1s);
       std::cout << fmt::format("Worker {} done\n", i);
       wg.done();
     }(i));
@@ -178,7 +178,7 @@ times out, e.g.:
 using std::chrono_literals;
 
 int main() {
-  bongo::time::timer t{1sec};
+  bongo::time::timer t{1s};
 
   decltype(t)::recv_type v;  // std::optional<std::chrono::seconds>
   v << t.c();
