@@ -73,7 +73,7 @@ int main() {
   }};
 
   for (int i = 0; i < 2; ++i) {
-    std::optional<std::string>::recv_type msg0, msg1;
+    std::optional<std::string> msg0, msg1;
     switch (bongo::select({
       bongo::recv_select_case(c0, msg0),
       bongo::recv_select_case(c1, msg1),
@@ -203,7 +203,7 @@ int main() {
   bongo::time::timer t{100ms};
   decltype(t)::recv_type v;
 
-  if (!t.stop()) {
+  if (t.stop()) {
     v << t.c();
   }
 
