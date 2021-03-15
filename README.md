@@ -4,12 +4,12 @@
 
 ---
 
-Bongo is a port of some APIs from Go to C++. This code is heavily based
+Bongo is a port of some APIs from [Go][] to C++. This code is heavily based
 on the [Go source][] and is therefore covered by the same copyright and
 3-clause BSD [license][].
 
 [Go]: https://golang.org
-[Golang source]: https://github.com/golang/go
+[Go source]: https://github.com/golang/go
 [license]: LICENSE
 
 ## API
@@ -158,7 +158,7 @@ This example is somewhat pointless since joining the threads accomplishes
 the same result, however it illustrates how a wait group might be used, for
 example, to wait for results from a thread pool.
 
-[WaitGroup][]: https://golang.org/pkg/sync/#WaitGroup
+[WaitGroup]: https://golang.org/pkg/sync/#WaitGroup
 [sync]: https://golang.org/pkg/sync/
 
 ### Time
@@ -225,5 +225,5 @@ package it can be implemented by managing your own thread that listens to
 the timeout channel.
 
 
-[Timer][]: https://golang.org/pkg/time/#Timer
+[Timer]: https://golang.org/pkg/time/#Timer
 [time]: https://golang.org/pkg/time/
