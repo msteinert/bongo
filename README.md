@@ -121,7 +121,7 @@ The [WaitGroup][] type from the [sync][] package is implemented. This is a
 naive implementation using a mutex and a condition variable. A possible
 future improvement might use a lockless algorithm.
 
-```
+```cpp
 #include <chrono>
 #include <iostream>
 #include <thread>
