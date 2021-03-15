@@ -71,7 +71,7 @@ deploy-cent7-clang8:
     - conan config install https://repos.exegy.net/artifactory/generic-dev-support/conan_config.zip
     - conan create -p clang-8 . exegy/stable
     - conan create -p clang-8.debug . exegy/stable
-    - conan upload --all -c -r exegy 'wilco/*' -no recipe
+    - conan upload --all -c -r exegy 'bongo/*' -no recipe
   only:
     - master
 
@@ -97,7 +97,7 @@ deploy-cent7-clang9:
     - conan config install https://repos.exegy.net/artifactory/generic-dev-support/conan_config.zip
     - conan create -p clang-9 . exegy/stable
     - conan create -p clang-9.debug . exegy/stable
-    - conan upload --all -c -r exegy 'wilco/*' -no recipe
+    - conan upload --all -c -r exegy 'bongo/*' -no recipe
   only:
     - master
 
@@ -123,7 +123,7 @@ deploy-cent7-gcc7:
     - conan config install https://repos.exegy.net/artifactory/generic-dev-support/conan_config.zip
     - conan create -p gcc-7 . exegy/stable
     - conan create -p gcc-7.debug . exegy/stable
-    - conan upload --all -c -r exegy 'wilco/*' -no recipe
+    - conan upload --all -c -r exegy 'bongo/*' -no recipe
   only:
     - master
 
@@ -146,7 +146,7 @@ deploy-recipe:
   image: docker.exegy.net/exegy/centos7-gcc7:20200204.1032
   script:
     - conan export . exegy/stable
-    - conan upload -c -r exegy 'wilco/*'
+    - conan upload -c -r exegy 'bongo/*'
   only:
     - master
 
@@ -158,7 +158,7 @@ deploy-cent7-gcc8:
     - conan config install https://repos.exegy.net/artifactory/generic-dev-support/conan_config.zip
     - conan create -p gcc-8 . exegy/stable
     - conan create -p gcc-8.debug . exegy/stable
-    - conan upload --all -c -r exegy 'wilco/*' -no recipe
+    - conan upload --all -c -r exegy 'bongo/*' -no recipe
   only:
     - master
 
@@ -182,6 +182,6 @@ deploy-cent8-gcc8:
     - conan config install https://repos.exegy.net/artifactory/generic-dev-support/conan_config.zip
     - conan create -p gcc-8.libstdc++11 . exegy/stable
     - conan create -p gcc-8.libstdc++11.debug . exegy/stable
-    - conan upload --all -c -r exegy 'wilco/*' -no recipe
+    - conan upload --all -c -r exegy 'bongo/*' -no recipe
   only:
     - master
