@@ -6,6 +6,7 @@ project(bongo
 option(ENABLE_CLANG_TIDY "Enable clang-tidy checks" OFF)
 option(ENABLE_COVERAGE "Enable code coverage reporting" OFF)
 option(ENABLE_ASAN "Enable the address sanitizer" OFF)
+option(ENABLE_TSAN "Enable the thread sanitizer" OFF)
 
 # Check for local cmake modules before ${CMAKE_ROOT}/Modules
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
@@ -44,6 +45,17 @@ if(ENABLE_ASAN AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   target_link_options(config-coverage
     INTERFACE
       -fsanitize=address)
+endif()
+
+# Configure TSAN
+add_library(config-tsan INTERFACE)
+if(ENABLE_TSAN AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+  target_compile_options(config-tsan
+    INTERFACE
+      -fsanitize=thread -fno-omit-frame-pointer)
+  target_link_options(config-coverage
+    INTERFACE
+      -fsanitize=thread)
 endif()
 
 # Attempt to load Conan

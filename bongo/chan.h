@@ -191,8 +191,8 @@ class chan : public detail::chan {
       }
       t->done_waiting_ = true;
       t->closed_ = true;
-      lock.unlock();
       t->parent_.cond_.notify_one();
+      lock.unlock();
     }
   }
 
@@ -252,8 +252,8 @@ class chan : public detail::chan {
     std::unique_lock lock{t->parent_.mutex_};
     *to = std::move(*from);
     t->done_waiting_ = true;
-    lock.unlock();
     t->parent_.cond_.notify_one();
+    lock.unlock();
   }
 
   // Send a value to the buffer.
@@ -283,8 +283,8 @@ class chan : public detail::chan {
       sendx_ = recvx_;
     }
     t->done_waiting_ = true;
-    lock.unlock();
     t->parent_.cond_.notify_one();
+    lock.unlock();
   }
 
   // Receive a value from the buffer.
