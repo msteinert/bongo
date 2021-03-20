@@ -220,6 +220,7 @@ TEST_CASE("Non-blocking receive race", "[chan]") {
         break;
       default:
         ++failures;
+        break;
       }
     }};
     c.close();
@@ -259,9 +260,6 @@ TEST_CASE("Non-blocking select race2", "[chan]") {
       bongo::recv_select_case(c1, v),
       bongo::default_select_case(),
     })) {
-    case 0:
-    case 1:
-      break;
     default:
       break;
     }
@@ -621,31 +619,31 @@ TEST_CASE("Select duplicate channel", "[chan]") {
 
 TEST_CASE("Channel benchmarks", "[!benchmark]") {
   BENCHMARK("Construct std::byte") {
-    return bongo::chan<std::byte>{8};
+    auto c = bongo::chan<std::byte>{8};
   };
 
   BENCHMARK("Construct int") {
-    return bongo::chan<int>{8};
+    auto c = bongo::chan<int>{8};
   };
 
   BENCHMARK("Construct std::byte*") {
-    return bongo::chan<std::byte*>{8};
+    auto c = bongo::chan<std::byte*>{8};
   };
 
   BENCHMARK("Construct std::monostate") {
-    return bongo::chan<std::monostate>{8};
+    auto c = bongo::chan<std::monostate>{8};
   };
 
   using struct32 = struct { int64_t a, b, c, d; };
   static_assert(sizeof (struct32) == 32);
   BENCHMARK("Construct struct32") {
-    return bongo::chan<struct32>{8};
+    auto c = bongo::chan<struct32>{8};
   };
 
   using struct40 = struct { int64_t a, b, c, d, e; };
   static_assert(sizeof (struct32) == 32);
   BENCHMARK("Construct struct40") {
-    return bongo::chan<struct40>{8};
+    auto c = bongo::chan<struct40>{8};
   };
 
   BENCHMARK_ADVANCED("Non-blocking select")(Catch::Benchmark::Chronometer meter) {
@@ -656,8 +654,6 @@ TEST_CASE("Channel benchmarks", "[!benchmark]") {
         bongo::recv_select_case(c, v),
         bongo::default_select_case(),
       })) {
-      case 0:
-        break;
       default:
         break;
       }
@@ -700,9 +696,7 @@ TEST_CASE("Channel benchmarks", "[!benchmark]") {
           bongo::recv_select_case(done, d),
         })) {
         case 0:
-          break;
         case 1:
-          break;
         case 2:
           break;
         case 3:
@@ -717,11 +711,7 @@ TEST_CASE("Channel benchmarks", "[!benchmark]") {
         bongo::recv_select_case(c2, v),
         bongo::recv_select_case(c3, v),
       })) {
-      case 0:
-        break;
-      case 1:
-        break;
-      case 2:
+      default:
         break;
       }
     });
@@ -762,8 +752,6 @@ TEST_CASE("Channel benchmarks", "[!benchmark]") {
         bongo::recv_select_case(c1, recv),
         bongo::default_select_case(),
       })) {
-      case 0:
-        break;
       default:
         break;
       }
@@ -771,8 +759,6 @@ TEST_CASE("Channel benchmarks", "[!benchmark]") {
         bongo::send_select_case(c2, std::move(send1)),
         bongo::default_select_case(),
       })) {
-      case 0:
-        break;
       default:
         break;
       }
@@ -780,8 +766,6 @@ TEST_CASE("Channel benchmarks", "[!benchmark]") {
         bongo::recv_select_case(c1, recv),
         bongo::default_select_case(),
       })) {
-      case 0:
-        break;
       default:
         break;
       }
@@ -789,8 +773,6 @@ TEST_CASE("Channel benchmarks", "[!benchmark]") {
         bongo::send_select_case(c1, std::move(send2)),
         bongo::default_select_case(),
       })) {
-      case 0:
-        break;
       default:
         break;
       }
@@ -839,7 +821,6 @@ TEST_CASE("Channel benchmarks", "[!benchmark]") {
             bongo::recv_select_case(done, v),
           })) {
           case 0:
-            break;
           case 1:
             break;
           case 2:
