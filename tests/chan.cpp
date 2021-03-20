@@ -5,6 +5,8 @@
 #include <cmath>
 #include <map>
 #include <thread>
+#include <variant>
+#include <vector>
 
 #include <catch2/catch.hpp>
 
@@ -614,3 +616,269 @@ TEST_CASE("Select duplicate channel", "[chan]") {
   t1.join();
   t2.join();
 }
+
+#if defined(CATCH_CONFIG_ENABLE_BENCHMARKING)
+
+TEST_CASE("Channel benchmarks", "[!benchmark]") {
+  BENCHMARK("Construct std::byte") {
+    return bongo::chan<std::byte>{8};
+  };
+
+  BENCHMARK("Construct int") {
+    return bongo::chan<int>{8};
+  };
+
+  BENCHMARK("Construct std::byte*") {
+    return bongo::chan<std::byte*>{8};
+  };
+
+  BENCHMARK("Construct std::monostate") {
+    return bongo::chan<std::monostate>{8};
+  };
+
+  using struct32 = struct { int64_t a, b, c, d; };
+  static_assert(sizeof (struct32) == 32);
+  BENCHMARK("Construct struct32") {
+    return bongo::chan<struct32>{8};
+  };
+
+  using struct40 = struct { int64_t a, b, c, d, e; };
+  static_assert(sizeof (struct32) == 32);
+  BENCHMARK("Construct struct40") {
+    return bongo::chan<struct40>{8};
+  };
+
+  BENCHMARK_ADVANCED("Non-blocking select")(Catch::Benchmark::Chronometer meter) {
+    auto c = bongo::chan<int>{};
+    meter.measure([&]() {
+      std::optional<int> v;
+      switch (bongo::select({
+        bongo::recv_select_case(c, v),
+        bongo::default_select_case(),
+      })) {
+      case 0:
+        break;
+      default:
+        break;
+      }
+    });
+  };
+
+  BENCHMARK_ADVANCED("Uncontended select")(Catch::Benchmark::Chronometer meter) {
+    auto c1 = bongo::chan<int>{1};
+    auto c2 = bongo::chan<int>{1};
+    c1 << 0;
+    meter.measure([&]() {
+      std::optional<int> v;
+      switch (bongo::select({
+        bongo::recv_select_case(c1, v),
+        bongo::recv_select_case(c2, v),
+      })) {
+      case 0:
+        c2 << 0;
+        break;
+      case 1:
+        c1 << 0;
+        break;
+      }
+    });
+  };
+
+  BENCHMARK_ADVANCED("Contended synchronous select")(Catch::Benchmark::Chronometer meter) {
+    auto c1 = bongo::chan<int>{};
+    auto c2 = bongo::chan<int>{};
+    auto c3 = bongo::chan<int>{};
+    auto done = bongo::chan<int>{};
+    auto t = std::thread([&]() {
+      while (true) {
+        int v = 0;
+        std::optional<int> d;
+        switch (bongo::select({
+          bongo::send_select_case(c1, std::move(v)),
+          bongo::send_select_case(c2, std::move(v)),
+          bongo::send_select_case(c3, std::move(v)),
+          bongo::recv_select_case(done, d),
+        })) {
+        case 0:
+          break;
+        case 1:
+          break;
+        case 2:
+          break;
+        case 3:
+          return;
+        }
+      }
+    });
+    meter.measure([&]() {
+      std::optional<int> v;
+      switch (bongo::select({
+        bongo::recv_select_case(c1, v),
+        bongo::recv_select_case(c2, v),
+        bongo::recv_select_case(c3, v),
+      })) {
+      case 0:
+        break;
+      case 1:
+        break;
+      case 2:
+        break;
+      }
+    });
+    done.close();
+    t.join();
+  };
+
+  BENCHMARK_ADVANCED("Contended asynchronous select")(Catch::Benchmark::Chronometer meter) {
+    auto n = std::thread::hardware_concurrency();
+    auto c1 = bongo::chan<int>{n};
+    auto c2 = bongo::chan<int>{n};
+    c1 << 0;
+    meter.measure([&]() {
+      std::optional<int> v;
+      switch (bongo::select({
+        bongo::recv_select_case(c1, v),
+        bongo::recv_select_case(c2, v),
+      })) {
+      case 0:
+        c2 << 0;
+        break;
+      case 1:
+        c1 << 0;
+        break;
+      }
+    });
+  };
+
+  BENCHMARK_ADVANCED("Multiple non-blocking select")(Catch::Benchmark::Chronometer meter) {
+    auto c1 = bongo::chan<int>{};
+    auto c2 = bongo::chan<int>{};
+    auto c3 = bongo::chan<int>{1};
+    auto c4 = bongo::chan<int>{1};
+    meter.measure([&]() {
+      int send = 0;
+      std::optional<int> recv;
+      switch (bongo::select({
+        bongo::recv_select_case(c1, recv),
+        bongo::default_select_case(),
+      })) {
+      case 0:
+        break;
+      default:
+        break;
+      }
+      switch (bongo::select({
+        bongo::send_select_case(c2, std::move(send)),
+        bongo::default_select_case(),
+      })) {
+      case 0:
+        break;
+      default:
+        break;
+      }
+      switch (bongo::select({
+        bongo::recv_select_case(c1, recv),
+        bongo::default_select_case(),
+      })) {
+      case 0:
+        break;
+      default:
+        break;
+      }
+      switch (bongo::select({
+        bongo::send_select_case(c1, std::move(send)),
+        bongo::default_select_case(),
+      })) {
+      case 0:
+        break;
+      default:
+        break;
+      }
+    });
+  };
+
+  BENCHMARK_ADVANCED("Uncontended")(Catch::Benchmark::Chronometer meter) {
+    int const n = 100;
+    auto c = bongo::chan<int>{n};
+    meter.measure([&]() {
+      for (int i = 0; i < n; ++i) {
+        c << 0;
+      }
+      int v;
+      for (int i = 0; i < n; ++i) {
+        v << c;
+      }
+    });
+  };
+
+  BENCHMARK_ADVANCED("Sem")(Catch::Benchmark::Chronometer meter) {
+    auto c = bongo::chan<std::monostate>{1};
+    std::optional<std::monostate> v;
+    meter.measure([&]() {
+      c << std::monostate{};
+      v << c;
+    });
+  };
+
+  BENCHMARK_ADVANCED("Popular")(Catch::Benchmark::Chronometer meter) {
+    int const n = 1000;
+    auto c = bongo::chan<bool>{};
+    auto done = bongo::chan<bool>{};
+
+    auto channels = std::vector<std::unique_ptr<bongo::chan<bool>>>{};
+    auto threads = std::vector<std::thread>{};
+
+    for (int i = 0; i < n; ++i) {
+      channels.push_back(std::make_unique<bongo::chan<bool>>());
+      threads.emplace_back([&](bongo::chan<bool>* d) {
+        while (true) {
+          std::optional<bool> v;
+          switch (bongo::select({
+            bongo::recv_select_case(c, v),
+            bongo::recv_select_case(d, v),
+            bongo::recv_select_case(done, v),
+          })) {
+          case 0:
+            break;
+          case 1:
+            break;
+          case 2:
+            return;
+          }
+        }
+      }, channels[i].get());
+    }
+
+    meter.measure([&](int n) {
+      auto m = (n+1) * 10;
+      for (int i = 0; i < m; ++i) {
+        for (auto& d : channels) {
+          *d << true;
+        }
+      }
+    });
+
+    done.close();
+    for (auto& t : threads) {
+      t.join();
+    }
+  };
+
+  BENCHMARK_ADVANCED("Select on closed")(Catch::Benchmark::Chronometer meter) {
+    auto c = bongo::chan<std::monostate>{};
+    c.close();
+    meter.measure([&]() {
+      std::optional<std::monostate> v;
+      switch (bongo::select({
+        bongo::recv_select_case(c, v),
+      })) {
+      case 0:
+        break;
+      default:
+        FAIL_CHECK("unreachable");
+      }
+    });
+  };
+}
+
+#endif  // defined(CATCH_CONFIG_ENABLE_BENCHMARKING)

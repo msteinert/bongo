@@ -12,6 +12,12 @@ on the [Go source][] and is therefore covered by the same copyright and
 [Go source]: https://github.com/golang/go
 [license]: LICENSE
 
+## Contents
+
+- [API](#api)
+- [Development](#development)
+- [Versioning](#versioning)
+
 ## API
 
 The author found himself missing some of the nice features provided by Go
@@ -49,8 +55,8 @@ int main() {
 }
 ```
 
-Select is implemented in a similar fashion as [Select][] found in the
-[reflect][] package:
+Select is implemented in a similar fashion as [Select][reflect.Select] found
+in the [reflect][] package:
 
 ```cpp
 #include <iostream>
@@ -94,7 +100,7 @@ int main() {
 
 [channels]: https://tour.golang.org/concurrency/2
 [select]: https://tour.golang.org/concurrency/5
-[Select]: https://golang.org/pkg/reflect/#Select
+[reflect.Select]: https://golang.org/pkg/reflect/#Select
 [reflect]:  https://golang.org/pkg/reflect/
 
 ### Context
@@ -226,3 +232,35 @@ the timeout channel.
 
 [Timer]: https://golang.org/pkg/time/#Timer
 [time]: https://golang.org/pkg/time/
+
+## Development
+
+CMake and a C++17 compiler are required to build the project. The test suite
+requires [Catch2][]. To build with devtoolset-7 using Conan something
+similar to the following should build the project and run the test suite:
+
+```
+$ mkdir build && cd build
+$ . /opt/rh/devtoolset-7/enable
+$ conan install -pr gcc-7 ..
+$ cmake ..
+$ ninja
+$ ./tests/bongo-test
+```
+
+To run the benchmarks:
+
+```
+./tests/bongo-test "~[benchmark]"
+```
+
+[Catch2]: https://github.com/catchorg/Catch2
+
+## Versioning
+
+A [semantic version][] number is computed based on a git tag when packages
+are generated. The major and minor version numbers come from a tag. The
+patch version is computed as the number of commits since the last version
+tag. The CI job publishes `Release` and `Debug` packages to Artifactory.
+
+[semantic version]: https://semver.org/
