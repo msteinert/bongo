@@ -691,12 +691,12 @@ TEST_CASE("Channel benchmarks", "[!benchmark]") {
     auto done = bongo::chan<int>{};
     auto t = std::thread([&]() {
       while (true) {
-        int v = 0;
+        int v1 = 0, v2 = 0, v3 = 0;
         std::optional<int> d;
         switch (bongo::select({
-          bongo::send_select_case(c1, std::move(v)),
-          bongo::send_select_case(c2, std::move(v)),
-          bongo::send_select_case(c3, std::move(v)),
+          bongo::send_select_case(c1, std::move(v1)),
+          bongo::send_select_case(c2, std::move(v2)),
+          bongo::send_select_case(c3, std::move(v3)),
           bongo::recv_select_case(done, d),
         })) {
         case 0:
