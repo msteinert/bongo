@@ -71,6 +71,7 @@ struct chan {
   chan(size_t size)
       : size_{size} {}
 
+  virtual ~chan() {}
   virtual void reset(select_value value_ptr) noexcept = 0;
   virtual void send(select_value from_ptr, waitq::thread* t) noexcept = 0;
   virtual void send(select_value from_ptr) noexcept = 0;
