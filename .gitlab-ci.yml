@@ -3,6 +3,18 @@ stages:
   - deploy-recipe
   - deploy-package
 
+cdash-clang-tidy:
+  stage: test
+  image: docker.exegy.net/exegy/centos7-clang9:20200603.2238
+  script:
+    - . /opt/exegy/llvm-9/enable
+    - mkdir build && cd build
+    - conan config install https://repos.exegy.net/artifactory/generic-dev-support/conan_config.zip
+    - conan install -p clang-9 ..
+    - CC=clang CXX=clang++ ctest -V -D CTEST_SOURCE_DIRECTORY:STRING=$(pwd)/.. -D CTEST_BINARY_DIRECTORY:STRING=$(pwd) -S ../cmake/scripts/ClangTidy.cmake
+  only:
+    - master
+
 cdash-coverage:
   stage: test
   image: docker.exegy.net/exegy/centos8:20200728.1012
@@ -36,32 +48,6 @@ cdash-tsan:
   only:
     - master
   allow_failure: true
-
-build-cent7-clang8:
-  stage: test
-  image: docker.exegy.net/exegy/centos7-clang8:20200204.1032
-  script:
-    - . /opt/exegy/llvm-8/enable
-    - mkdir build && cd build
-    - conan config install https://repos.exegy.net/artifactory/generic-dev-support/conan_config.zip
-    - conan install -p clang-8 ..
-    - CC=clang CXX=clang++ cmake -GNinja ..
-    - ninja
-    - ctest --output-on-failure
-  except:
-    - master
-
-deploy-cent7-clang8:
-  stage: deploy-package
-  image: docker.exegy.net/exegy/centos7-clang8:20200204.1032
-  script:
-    - . /opt/exegy/llvm-8/enable
-    - conan config install https://repos.exegy.net/artifactory/generic-dev-support/conan_config.zip
-    - conan create -p clang-8 . exegy/stable
-    - conan create -p clang-8.debug . exegy/stable
-    - conan upload --all -c -r exegy 'bongo/*' -no recipe
-  only:
-    - master
 
 build-cent7-clang9:
   stage: test

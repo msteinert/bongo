@@ -5,14 +5,16 @@ add_executable(bongo-test
   sync.cpp
   time.cpp)
 
+if(NOT ENABLE_CLANG_TIDY)
+  target_compile_definitions(bongo-test
+    PRIVATE
+      -DCATCH_CONFIG_ENABLE_BENCHMARKING)
+endif()
+
 target_compile_options(bongo-test
   PRIVATE
     -Wall
     -Wextra)
-
-target_compile_definitions(bongo-test
-  PRIVATE
-    -DCATCH_CONFIG_ENABLE_BENCHMARKING)
 
 target_link_libraries(bongo-test
   PRIVATE
