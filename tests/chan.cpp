@@ -756,7 +756,7 @@ TEST_CASE("Channel benchmarks", "[!benchmark]") {
     auto c3 = bongo::chan<int>{1};
     auto c4 = bongo::chan<int>{1};
     meter.measure([&]() {
-      int send = 0;
+      int send1 = 0, send2 = 0;
       std::optional<int> recv;
       switch (bongo::select({
         bongo::recv_select_case(c1, recv),
@@ -768,7 +768,7 @@ TEST_CASE("Channel benchmarks", "[!benchmark]") {
         break;
       }
       switch (bongo::select({
-        bongo::send_select_case(c2, std::move(send)),
+        bongo::send_select_case(c2, std::move(send1)),
         bongo::default_select_case(),
       })) {
       case 0:
@@ -786,7 +786,7 @@ TEST_CASE("Channel benchmarks", "[!benchmark]") {
         break;
       }
       switch (bongo::select({
-        bongo::send_select_case(c1, std::move(send)),
+        bongo::send_select_case(c1, std::move(send2)),
         bongo::default_select_case(),
       })) {
       case 0:
