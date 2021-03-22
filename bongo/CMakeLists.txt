@@ -20,6 +20,7 @@ target_link_libraries(bongo
   PUBLIC
     $<BUILD_INTERFACE:config-asan>
     $<BUILD_INTERFACE:config-coverage>
+    $<BUILD_INTERFACE:config-tsan>
     Threads::Threads)
 
 install(
