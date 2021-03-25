@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <array>
 #include <atomic>
 #include <condition_variable>
 #include <cstdint>
@@ -10,83 +11,21 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
+#include <bongo/detail/chan.h>
 #include <bongo/error.h>
 
-using select_value = void*;
-
-enum select_direction {
-  select_send,
-  select_recv,
-  select_default,
-};
-
 namespace bongo {
-namespace detail {
 
-// Represents an OS thread.
-struct thread {
-  std::mutex mutex_;
-  std::condition_variable cond_;
-  std::atomic_bool select_done_ = false;
-
-  // Block this forever.
-  void forever_sleep();
-};
-
-thread& this_thread();
-
-struct waitq {
-  // Represents a thread in a wait queue.
-  struct thread {
-    detail::thread& parent_ = this_thread();
-    thread* next_ = nullptr;
-    thread* prev_ = nullptr;
-    bool done_waiting_ = false;
-    bool closed_ = false;
-    select_value value_ = nullptr;
-    bool is_select_ = false;
-  };
-
-  std::atomic<thread*> first_ = nullptr;
-  thread* last_ = nullptr;
-
-  void enqueue(thread* t) noexcept;
-  thread* dequeue() noexcept;
-  void dequeue(thread* t) noexcept;
-};
-
-struct chan {
-  waitq sendq_;
-  waitq recvq_;
-  size_t const size_;
-  std::atomic_size_t count_ = 0;
-  size_t sendx_ = 0;
-  size_t recvx_ = 0;
-  std::atomic_bool closed_ = false;
-  std::mutex mutex_;
-
-  chan(size_t size)
-      : size_{size} {}
-
-  virtual ~chan() {}
-  virtual void reset(select_value value_ptr) noexcept = 0;
-  virtual void send(select_value from_ptr, waitq::thread* t) noexcept = 0;
-  virtual void send(select_value from_ptr) noexcept = 0;
-  virtual void recv(select_value to_ptr, waitq::thread* t) noexcept = 0;
-  virtual void recv(select_value to_ptr) noexcept = 0;
-};
-
-}  // namespace detail
-
-struct select_case {
-  select_direction direction;
-  detail::chan* chan = nullptr;
-  select_value value = nullptr;
-};
-
+/**
+ * The chan type is a bug-for-bug port of Go channels.
+ *
+ * - https://golang.org/ref/spec#Channel_types
+ * - https://tour.golang.org/concurrency/2
+ */
 template <typename T>
 class chan : public detail::chan {
   std::unique_ptr<T[]> buf_ = nullptr;
@@ -200,15 +139,6 @@ class chan : public detail::chan {
   size_t cap() const noexcept { return size_; }
   size_t len() const noexcept { return count_.load(std::memory_order_relaxed); }
 
-  select_case send_select_case(T const&& v) = delete;
-  select_case send_select_case(T&& v) {
-    return select_case{select_send, this, std::addressof(v)};
-  }
-
-  select_case recv_select_case(std::optional<T>& v) {
-    return select_case{select_recv, this, std::addressof(v)};
-  }
-
   struct iterator {
     chan<T>& chan_;
     std::optional<T> value_;
@@ -241,13 +171,13 @@ class chan : public detail::chan {
   void push_back(T const& value) { send(T{value}); }
   void push_back(T&& value) { send(std::move(value)); }
 
-  void reset(select_value value_ptr) noexcept override {
+  void reset(detail::select_value value_ptr) noexcept override {
     auto value = reinterpret_cast<std::optional<T>*>(value_ptr);
     value->reset();
   }
 
   // Send a value to another thread.
-  void send(select_value from_ptr, detail::waitq::thread* t) noexcept override {
+  void send(detail::select_value from_ptr, detail::waitq::thread* t) noexcept override {
     auto from = reinterpret_cast<T*>(from_ptr);
     auto to = reinterpret_cast<std::optional<T>*>(t->value_);
     std::unique_lock lock{t->parent_.mutex_};
@@ -258,7 +188,7 @@ class chan : public detail::chan {
   }
 
   // Send a value to the buffer.
-  void send(select_value from_ptr) noexcept override {
+  void send(detail::select_value from_ptr) noexcept override {
     auto from = reinterpret_cast<T*>(from_ptr);
     buf_[sendx_] = std::move(*from);
     if (++sendx_ == size_) {
@@ -268,7 +198,7 @@ class chan : public detail::chan {
   }
 
   // Receive a value from another thread.
-  void recv(select_value to_ptr, detail::waitq::thread* t) noexcept override {
+  void recv(detail::select_value to_ptr, detail::waitq::thread* t) noexcept override {
     auto to = reinterpret_cast<std::optional<T>*>(to_ptr);
     auto from = reinterpret_cast<T*>(t->value_);
     std::unique_lock lock{t->parent_.mutex_};
@@ -289,7 +219,7 @@ class chan : public detail::chan {
   }
 
   // Receive a value from the buffer.
-  void recv(select_value to_ptr) noexcept override {
+  void recv(detail::select_value to_ptr) noexcept override {
     auto to = reinterpret_cast<std::optional<T>*>(to_ptr);
     *to = std::move(buf_[recvx_]);
     if (++recvx_ == size_) {
@@ -299,70 +229,45 @@ class chan : public detail::chan {
   }
 };
 
-// Create a send select case.
-template <typename T>
-select_case send_select_case(chan<T>& c, T&& v) {
-  return select_case{select_send, std::addressof(c), std::addressof(v)};
-}
-
-template <typename T>
-select_case send_select_case(chan<T>* c, T&& v) {
-  return select_case{select_send, c, std::addressof(v)};
-}
-
-// Create a receive select case.
-template <typename T>
-select_case recv_select_case(chan<T>& c, std::optional<T>& v) {
-  return select_case{select_recv, std::addressof(c), std::addressof(v)};
-}
-
-template <typename T>
-select_case recv_select_case(chan<T>* c, std::optional<T>& v) {
-  return select_case{select_recv, c, std::addressof(v)};
-}
-
-// Create a default select case.
-inline select_case default_select_case() {
-  return select_case{select_default, nullptr, nullptr};
-}
-
-// Execute a select operation.
-size_t select(select_case const* cases, size_t n);
-
-inline size_t select(std::vector<select_case> const& cases) {
-  return select(cases.data(), cases.size());
-}
-
-template <size_t N>
-size_t select(const select_case (&cases)[N]) {
-  return select(cases, N);
-}
-
-// Send a value to a channel.
-template <typename T>
-void operator<<(chan<T>& c, T const& value) {
-  c.send(T{value});
-}
-
-template <typename T>
-void operator<<(chan<T>* c, T const& value) {
-  if (c) {
-    c->send(T{value});
-  } else {
-    detail::this_thread().forever_sleep();
-  }
-}
-
-// Move a value to a channel.
+/**
+ * Move a value to a channel.
+ *
+ * If \p c is nullptr then this thread will block forever.
+ */
 template <typename T>
 void operator<<(chan<T>& c, T&& value) {
   c.send(std::move(value));
 }
 
+/**
+ * Move a value to a channel.
+ */
 template <typename T>
 void operator<<(chan<T>* c, T&& value) {
   if (c) {
     c->send(std::move(value));
+  } else {
+    detail::this_thread().forever_sleep();
+  }
+}
+
+/**
+ * Send a copy of a value to a channel.
+ */
+template <typename T>
+void operator<<(chan<T>& c, T const& value) {
+  c.send(T{value});
+}
+
+/**
+ * Send a copy of a value to a channel.
+ *
+ * If \p c is nullptr then this thread will block forever.
+ */
+template <typename T>
+void operator<<(chan<T>* c, T const& value) {
+  if (c) {
+    c->send(T{value});
   } else {
     detail::this_thread().forever_sleep();
   }
@@ -383,13 +288,23 @@ void operator<<(std::optional<T>& value, chan<T>* c) {
   }
 }
 
-// Receive a value from a channel.
+/**
+ * Receive a value from a channel.
+ *
+ * If no value is received a default initialized value is returned.
+ */
 template <typename T>
 void operator<<(T& value, chan<T>& c) {
   auto v = c.recv();
   value = v ? std::move(*v) : T{};
 }
 
+/**
+ * Receive a value from a channel.
+ *
+ * If no value is received a default initialized value is returned. If \p c is
+ * nullptr then this thread will block forever.
+ */
 template <typename T>
 void operator<<(T& value, chan<T>* c) {
   if (c) {
@@ -398,6 +313,147 @@ void operator<<(T& value, chan<T>* c) {
   } else {
     detail::this_thread().forever_sleep();
   }
+}
+
+/**
+ * Input to the select function.
+ *
+ * Use one of the factory functions to create a case:
+ *
+ * - send_select_case
+ * - recv_select_case
+ * - default_select_case
+ */
+struct select_case {
+  detail::select_direction direction;
+  detail::chan* chan = nullptr;
+  detail::select_value value = nullptr;
+};
+
+/**
+ * Create a send case for input to select.
+ *
+ * If this case is trigger the value \p v will be moved.
+ *
+ * \param c The channel participating in the send
+ * \param v The value to send
+ */
+template <typename T>
+select_case send_select_case(chan<T>& c, T&& v) {
+  return select_case{detail::select_send, std::addressof(c), std::addressof(v)};
+}
+
+/**
+ * Create a send case for input to select.
+ *
+ * If this case is trigger the value \p v will be moved.
+ *
+ * \param c The channel participating in the send (can be nullptr)
+ * \param v The value to send
+ */
+template <typename T>
+select_case send_select_case(chan<T>* c, T&& v) {
+  return select_case{detail::select_send, c, std::addressof(v)};
+}
+
+/**
+ * Create a receive case for input to select.
+ *
+ * \param c The channel participating in the receive
+ * \param v Storage for receiving the value
+ *
+ * \returns A receive select case.
+ */
+template <typename T>
+select_case recv_select_case(chan<T>& c, std::optional<T>& v) {
+  return select_case{detail::select_recv, std::addressof(c), std::addressof(v)};
+}
+
+/**
+ * Create a receive case for input to select.
+ *
+ * \param c The channel participating in the receive (can be nullptr)
+ * \param v Storage for receiving the value
+ *
+ * \returns A receive select case.
+ */
+template <typename T>
+select_case recv_select_case(chan<T>* c, std::optional<T>& v) {
+  return select_case{detail::select_recv, c, std::addressof(v)};
+}
+
+/**
+ * Create a default case case for input to select.
+ *
+ * \returns A default select case.
+ */
+inline select_case default_select_case() {
+  return select_case{detail::select_default, nullptr, nullptr};
+}
+
+/**
+ * Execute a select operation.
+ *
+ * This select implementation is similar to reflect.Select. The input is an
+ * array of select cases. The output reflects the index that triggered the
+ * select. The default case is triggered if no channels are ready.
+ *
+ * This function is the base implementation. One of the other overloads is most
+ * likely more appropriate for user code.
+ *
+ * - https://golang.org/ref/spec#Select_statements
+ * - https://tour.golang.org/concurrency/5
+ * - https://golang.org/pkg/reflect/#Select
+ *
+ * @param cases An array of select cases
+ * @param n The length of \p cases
+ *
+ * @returns The index in \p cases that triggered the select.
+ */
+size_t select(select_case const* cases, size_t n);
+
+/**
+ * Execute a select operation.
+ *
+ * Use this overload if you wish to dynamically change the select set at runtime.
+ *
+ * @param cases A vector of select cases
+ *
+ * @returns The index in \p cases that triggered the select.
+ */
+inline size_t select(std::vector<select_case> const& cases) {
+  return select(cases.data(), cases.size());
+}
+
+/**
+ * Execute a select operation.
+ *
+ * Use this overload if the number of cases is known at compile time.
+ *
+ * @param cases An array of select cases
+ *
+ * @returns The index in \p cases that triggered the select.
+ */
+template <size_t N>
+size_t select(const select_case (&cases)[N]) {
+  return select(cases, N);
+}
+
+/**
+ * Execute a select operation.
+ *
+ * Use this overload if the number of cases is known at compile time.
+ *
+ * @param args A parameter pack of select cases
+ *
+ * @returns The index in \p cases that triggered the select.
+ */
+template <typename... Args>
+std::enable_if_t<
+  std::conjunction_v<std::is_same<select_case, Args>...>,
+size_t> select(Args&&... args) {
+  std::array<select_case, sizeof...(Args)> cases = {std::forward<Args>(args)...};
+  return select(cases.data(), cases.size());
 }
 
 }  // namespace bongo

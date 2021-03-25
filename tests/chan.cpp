@@ -39,10 +39,10 @@ TEST_CASE("Test channels", "[chan]") {
       REQUIRE(recv2 == false);
       // Ensure that non-blocking receive does not block
       std::optional<int> v;
-      switch (bongo::select({
+      switch (bongo::select(
         bongo::recv_select_case(c, v),
-        bongo::default_select_case(),
-      })) {
+        bongo::default_select_case()
+      )) {
       case 0:
         FAIL_CHECK("receive from empty chan");
       default:
@@ -69,10 +69,10 @@ TEST_CASE("Test channels", "[chan]") {
       REQUIRE(sent.load() == false);
       // Ensure that non-blocking send does not block
       int v = 0;
-      switch (bongo::select({
+      switch (bongo::select(
         bongo::send_select_case(c, std::move(v)),
-        bongo::default_select_case(),
-      })) {
+        bongo::default_select_case()
+      )) {
       case 0:
         FAIL_CHECK("send to full chan");
       default:
@@ -212,10 +212,10 @@ TEST_CASE("Non-blocking receive race", "[chan]") {
     c << 1;
     auto t = std::thread{[&]() {
       std::optional<int> v;
-      switch (bongo::select({
+      switch (bongo::select(
         bongo::recv_select_case(c, v),
-        bongo::default_select_case(),
-      })) {
+        bongo::default_select_case()
+      )) {
       case 0:
         break;
       default:
@@ -240,11 +240,11 @@ TEST_CASE("Non-blocking select race2", "[chan]") {
     c1 << 1;
     auto t = std::thread{[&]() {
       std::optional<int> v1, v2;
-      switch (bongo::select({
+      switch (bongo::select(
         bongo::recv_select_case(c1, v1),
         bongo::recv_select_case(c2, v2),
-        bongo::default_select_case(),
-      })) {
+        bongo::default_select_case()
+      )) {
       case 0:
       case 1:
         break;
@@ -256,10 +256,10 @@ TEST_CASE("Non-blocking select race2", "[chan]") {
     }};
     c2.close();
     std::optional<int> v;
-    switch (bongo::select({
+    switch (bongo::select(
       bongo::recv_select_case(c1, v),
-      bongo::default_select_case(),
-    })) {
+      bongo::default_select_case()
+    )) {
     default:
       break;
     }
@@ -282,10 +282,10 @@ TEST_CASE("Self select", "[chan]") {
           if ((p == 0) || (i%2 == 0)) {
             int v0 = p;
             std::optional<int> v1;
-            switch (bongo::select({
+            switch (bongo::select(
               bongo::send_select_case(c, std::move(v0)),
-              bongo::recv_select_case(c, v1),
-            })) {
+              bongo::recv_select_case(c, v1)
+            )) {
             case 0:
               break;
             case 1:
@@ -298,10 +298,10 @@ TEST_CASE("Self select", "[chan]") {
           } else {
             std::optional<int> v0;
             int v1 = p;
-            switch (bongo::select({
+            switch (bongo::select(
               bongo::recv_select_case(c, v0),
-              bongo::send_select_case(c, std::move(v1)),
-            })) {
+              bongo::send_select_case(c, std::move(v1))
+            )) {
             case 0:
               if (cap == 0 && v0 == p) {
                 error = true;
@@ -449,20 +449,20 @@ TEST_CASE("Select fairness", "[chan]") {
   auto t = std::thread{[&]() {
     while (true) {
       std::optional<int> b;
-      switch (bongo::select({
+      switch (bongo::select(
         bongo::recv_select_case(c3, b),
         bongo::recv_select_case(c4, b),
         bongo::recv_select_case(c1, b),
-        bongo::recv_select_case(c2, b),
-      })) {
+        bongo::recv_select_case(c2, b)
+      )) {
       default:
         break;
       }
       std::optional<int> d;
-      switch (bongo::select({
+      switch (bongo::select(
         bongo::send_select_case(out, std::move(b.value())),
-        bongo::recv_select_case(done, d),
-      })) {
+        bongo::recv_select_case(done, d)
+      )) {
       case 0:
         break;
       case 1:
@@ -512,10 +512,10 @@ TEST_CASE("Pseudo-random send", "[chan]") {
     }};
     for (size_t i = 0; i < n; ++i) {
       int b0 = 0, b1 = 1;
-      switch (bongo::select({
+      switch (bongo::select(
         bongo::send_select_case(c, std::move(b1)),
-        bongo::send_select_case(c, std::move(b0)),
-      })) {
+        bongo::send_select_case(c, std::move(b0))
+      )) {
       default:
         break;
       }
@@ -588,11 +588,11 @@ TEST_CASE("Select duplicate channel", "[chan]") {
 
   auto t1 = std::thread{[&]() {
     std::optional<int> v;
-    switch (bongo::select({
+    switch (bongo::select(
       bongo::recv_select_case(c, v),
       bongo::recv_select_case(c, v),
-      bongo::recv_select_case(d, v),
-    })) {
+      bongo::recv_select_case(d, v)
+    )) {
     default:
       break;
     }
@@ -650,10 +650,10 @@ TEST_CASE("Channel benchmarks", "[!benchmark]") {
     auto c = bongo::chan<int>{};
     meter.measure([&]() {
       std::optional<int> v;
-      switch (bongo::select({
+      switch (bongo::select(
         bongo::recv_select_case(c, v),
-        bongo::default_select_case(),
-      })) {
+        bongo::default_select_case()
+      )) {
       default:
         break;
       }
@@ -666,10 +666,10 @@ TEST_CASE("Channel benchmarks", "[!benchmark]") {
     c1 << 0;
     meter.measure([&]() {
       std::optional<int> v;
-      switch (bongo::select({
+      switch (bongo::select(
         bongo::recv_select_case(c1, v),
-        bongo::recv_select_case(c2, v),
-      })) {
+        bongo::recv_select_case(c2, v)
+      )) {
       case 0:
         c2 << 0;
         break;
@@ -689,12 +689,12 @@ TEST_CASE("Channel benchmarks", "[!benchmark]") {
       while (true) {
         int v1 = 0, v2 = 0, v3 = 0;
         std::optional<int> d;
-        switch (bongo::select({
+        switch (bongo::select(
           bongo::send_select_case(c1, std::move(v1)),
           bongo::send_select_case(c2, std::move(v2)),
           bongo::send_select_case(c3, std::move(v3)),
-          bongo::recv_select_case(done, d),
-        })) {
+          bongo::recv_select_case(done, d)
+        )) {
         case 0:
         case 1:
         case 2:
@@ -706,11 +706,11 @@ TEST_CASE("Channel benchmarks", "[!benchmark]") {
     });
     meter.measure([&]() {
       std::optional<int> v;
-      switch (bongo::select({
+      switch (bongo::select(
         bongo::recv_select_case(c1, v),
         bongo::recv_select_case(c2, v),
-        bongo::recv_select_case(c3, v),
-      })) {
+        bongo::recv_select_case(c3, v)
+      )) {
       default:
         break;
       }
@@ -726,10 +726,10 @@ TEST_CASE("Channel benchmarks", "[!benchmark]") {
     c1 << 0;
     meter.measure([&]() {
       std::optional<int> v;
-      switch (bongo::select({
+      switch (bongo::select(
         bongo::recv_select_case(c1, v),
-        bongo::recv_select_case(c2, v),
-      })) {
+        bongo::recv_select_case(c2, v)
+      )) {
       case 0:
         c2 << 0;
         break;
@@ -748,31 +748,31 @@ TEST_CASE("Channel benchmarks", "[!benchmark]") {
     meter.measure([&]() {
       int send1 = 0, send2 = 0;
       std::optional<int> recv;
-      switch (bongo::select({
+      switch (bongo::select(
         bongo::recv_select_case(c1, recv),
-        bongo::default_select_case(),
-      })) {
+        bongo::default_select_case()
+      )) {
       default:
         break;
       }
-      switch (bongo::select({
+      switch (bongo::select(
         bongo::send_select_case(c2, std::move(send1)),
-        bongo::default_select_case(),
-      })) {
+        bongo::default_select_case()
+      )) {
       default:
         break;
       }
-      switch (bongo::select({
+      switch (bongo::select(
         bongo::recv_select_case(c1, recv),
-        bongo::default_select_case(),
-      })) {
+        bongo::default_select_case()
+      )) {
       default:
         break;
       }
-      switch (bongo::select({
+      switch (bongo::select(
         bongo::send_select_case(c1, std::move(send2)),
-        bongo::default_select_case(),
-      })) {
+        bongo::default_select_case()
+      )) {
       default:
         break;
       }
@@ -815,11 +815,11 @@ TEST_CASE("Channel benchmarks", "[!benchmark]") {
       threads.emplace_back([&](bongo::chan<bool>* d) {
         while (true) {
           std::optional<bool> v;
-          switch (bongo::select({
+          switch (bongo::select(
             bongo::recv_select_case(c, v),
             bongo::recv_select_case(d, v),
-            bongo::recv_select_case(done, v),
-          })) {
+            bongo::recv_select_case(done, v)
+          )) {
           case 0:
           case 1:
             break;
@@ -850,9 +850,10 @@ TEST_CASE("Channel benchmarks", "[!benchmark]") {
     c.close();
     meter.measure([&]() {
       std::optional<std::monostate> v;
-      switch (bongo::select({
+      switch (bongo::select(
         bongo::recv_select_case(c, v),
-      })) {
+        bongo::default_select_case()
+      )) {
       case 0:
         break;
       default:

@@ -11,7 +11,7 @@
 
 namespace bongo::context {
 
-cancel_context::cancel_context(std::shared_ptr<context> parent)
+cancel_context::cancel_context(context_type parent)
     : context{}
     , parent_{std::move(parent)} {
   parent_->add(this);
@@ -68,24 +68,50 @@ void cancel_context::deadline(std::chrono::system_clock::time_point tp) {
   deadline_ = std::move(tp);
 }
 
-std::shared_ptr<context> background() {
-  static std::shared_ptr<context> ctx = std::make_shared<context>();
+std::optional<std::chrono::system_clock::time_point> value_context::deadline() {
+  return parent_->deadline();
+}
+
+chan<std::monostate>* value_context::done() {
+  return parent_->done();
+}
+
+std::exception_ptr value_context::err() {
+  return parent_->err();
+}
+
+std::any value_context::value(std::string const& k) {
+  return k == key_ ? value_ : parent_->value(k);
+}
+
+void value_context::cancel(bool remove, std::exception_ptr err) {
+  parent_->cancel(remove, err);
+}
+
+void value_context::add(context* child) {
+  parent_->add(child);
+}
+
+void value_context::remove(context* child) {
+  parent_->remove(child);
+}
+
+context_type background() {
+  static context_type ctx = std::make_shared<context>();
   return ctx;
 }
 
-std::shared_ptr<context> todo() {
-  static std::shared_ptr<context> ctx = std::make_shared<context>();
+context_type todo() {
+  static context_type ctx = std::make_shared<context>();
   return ctx;
 }
 
-std::pair<std::shared_ptr<context>, cancel_func>
-with_cancel(std::shared_ptr<context> parent) {
+cancelable_context with_cancel(context_type parent) {
   auto ctx = std::make_shared<cancel_context>(std::move(parent));
   return std::make_pair(ctx, [ctx]() { ctx->cancel(); });
 }
 
-std::shared_ptr<context>
-with_value(std::shared_ptr<context> parent, std::string value, std::any key) {
+context_type with_value(context_type parent, std::string value, std::any key) {
   return std::make_shared<value_context>(std::move(parent), std::move(value), std::move(key));
 }
 

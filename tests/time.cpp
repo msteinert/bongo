@@ -33,7 +33,7 @@ TEST_CASE("Reset after stop", "[time]") {
 
 TEST_CASE("Reset after timeout", "[time]") {
   bongo::time::timer t{1ms};
-  std::this_thread::sleep_for(2ms);
+  std::this_thread::sleep_for(10ms);
   if (!t.stop()) {
     decltype(t)::recv_type v;
     v << t.c();

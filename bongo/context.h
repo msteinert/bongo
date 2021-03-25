@@ -33,18 +33,24 @@ inline std::exception_ptr deadline_exceeded = std::make_exception_ptr(error{"con
 
 struct context {
   virtual ~context() {}
+
+  // Public API
   virtual std::optional<std::chrono::system_clock::time_point> deadline() { return std::nullopt; }
   virtual chan<std::monostate>* done() { return nullptr; }
   virtual std::exception_ptr err() { return nullptr; }
   virtual std::any value(std::string const&) { return std::any{}; }
 
+  // Implementation API
   virtual void cancel(bool, std::exception_ptr) {}
   virtual void add(context*) {}
   virtual void remove(context*) {}
 };
 
+using context_type = std::shared_ptr<context>;
+using cancelable_context = std::pair<context_type, cancel_func>;
+
 class cancel_context : public context {
-  std::shared_ptr<context> parent_;
+  context_type parent_;
   std::optional<std::chrono::system_clock::time_point> deadline_ = std::nullopt;
 
   std::mutex mutex_;
@@ -53,7 +59,7 @@ class cancel_context : public context {
   std::exception_ptr err_;
 
  public:
-  cancel_context(std::shared_ptr<context> parent);
+  cancel_context(context_type parent);
   std::optional<std::chrono::system_clock::time_point> deadline() override;
   chan<std::monostate>* done() override;
   std::exception_ptr err() override;
@@ -67,38 +73,34 @@ class cancel_context : public context {
 };
 
 class value_context : public context {
-  std::shared_ptr<context> parent_;
+  context_type parent_;
   std::string key_;
   std::any value_;
 
  public:
-  value_context(std::shared_ptr<context> parent, std::string key, std::any value)
+  value_context(context_type parent, std::string key, std::any value)
       : parent_{std::move(parent)}
       , key_{std::move(key)}
       , value_{std::move(value)} {}
 
-  std::optional<std::chrono::system_clock::time_point> deadline() override { return parent_->deadline(); }
-  chan<std::monostate>* done() override { return parent_->done(); }
-  std::exception_ptr err() override { return parent_->err(); }
-  std::any value(std::string const& k) override {
-    return k == key_ ? value_ : parent_->value(k);
-  }
+  std::optional<std::chrono::system_clock::time_point> deadline() override;
+  chan<std::monostate>* done() override;
+  std::exception_ptr err() override;
+  std::any value(std::string const& k) override;
 
-  void cancel(bool remove, std::exception_ptr err) override { parent_->cancel(remove, err); }
-  void add(context* child) override { parent_->add(child); }
-  void remove(context* child) override { parent_->remove(child); }
+  void cancel(bool remove, std::exception_ptr err) override;
+  void add(context* child) override;
+  void remove(context* child) override;
 };
 
 // Factory functions
-std::shared_ptr<context> background();
-std::shared_ptr<context> todo();
-
-std::pair<std::shared_ptr<context>, cancel_func>
-with_cancel(std::shared_ptr<context> parent);
+context_type background();
+context_type todo();
+cancelable_context with_cancel(context_type parent);
+context_type with_value(context_type parent, std::string value, std::any key);
 
 template <typename Rep, typename Period = std::ratio<1>>
-std::pair<std::shared_ptr<context>, cancel_func>
-with_timeout(std::shared_ptr<context> parent, std::chrono::duration<Rep, Period> dur) {
+cancelable_context with_timeout(context_type parent, std::chrono::duration<Rep, Period> dur) {
   auto ctx = std::make_shared<cancel_context>(std::move(parent));
   ctx->deadline(std::chrono::system_clock::now() + dur);
   auto timer = std::make_shared<bongo::time::timer<Rep, Period>>(
@@ -110,8 +112,7 @@ with_timeout(std::shared_ptr<context> parent, std::chrono::duration<Rep, Period>
 }
 
 template <typename Clock, typename Duration = typename Clock::duration>
-std::pair<std::shared_ptr<context>, cancel_func>
-with_deadline(std::shared_ptr<context> parent, std::chrono::time_point<Clock, Duration> tp) {
+cancelable_context with_deadline(context_type parent, std::chrono::time_point<Clock, Duration> tp) {
   auto cur = parent->deadline();
   auto ctx = std::make_shared<cancel_context>(std::move(parent));
   if (cur && *cur < tp) {
@@ -132,8 +133,5 @@ with_deadline(std::shared_ptr<context> parent, std::chrono::time_point<Clock, Du
     ctx->cancel();
   });
 }
-
-std::shared_ptr<context>
-with_value(std::shared_ptr<context> parent, std::string value, std::any key);
 
 }  // namespace bongo::context

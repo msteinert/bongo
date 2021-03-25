@@ -4,9 +4,9 @@
 
 ---
 
-Bongo is a port of some APIs from [Go][] to C++. This code is heavily based
-on the [Go source][] and is therefore covered by the same copyright and
-3-clause BSD [license][].
+Bongo is a port of some concurrency APIs from [Go][] to C++. This code is
+heavily based on the [Go source][] and is therefore covered by the same
+copyright and 3-clause BSD [license][].
 
 [Go]: https://golang.org
 [Go source]: https://github.com/golang/go
@@ -79,14 +79,15 @@ int main() {
 
   for (int i = 0; i < 2; ++i) {
     std::optional<std::string> msg0, msg1;
-    switch (bongo::select({
+    bongo::select_case cases[] = {
       bongo::recv_select_case(c0, msg0),
       bongo::recv_select_case(c1, msg1),
-    })) {
-    case 0:
+    }
+    switch (bongo::select(cases)) {
+    case 0:  // Value corresponds with index 0 in "cases"
       std::cout << "received: " << *msg0 << "\n";
       break;
-    case 1:
+    case 1:  // Value corresponds with index 1 in "cases"
       std::cout << "received: " << *msg1 << "\n";
       break;
     }
@@ -147,7 +148,7 @@ int main() {
       std::this_thread::sleep_for(1s);
       std::cout << fmt::format("Worker {} done\n", i);
       wg.done();
-    }(i));
+    }, i);
   }
 
   wg.wait();
