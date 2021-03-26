@@ -122,9 +122,9 @@ int main() {
   auto [ctx, cancel] = bongo::context::with_cancel(bongo::context::background());
   bongo::chan<int> dst;
 
-  // This thread generates integers and sends them to the returned channel.
-  // The main thread needs to cancel the context once it is done consuming
-  // generated integers so the thread will exit.
+  // This thread generates integers and sends them to a channel. The main thread
+  // needs to cancel the context once it is done consuming generated integers so
+  // the thread will exit.
   std::thread t{[&](std::shared_ptr<bongo::context> ctx) {
     auto n = 1;
     while (true) {
@@ -209,7 +209,7 @@ future improvement might use a lockless algorithm.
 #include <bongo/sync.h>
 #include <fmt/format.h>
 
-using std::chrono_literals;
+using namespace std::chrono_literals;
 
 int main() {
   bongo::wait_group wg;
@@ -255,7 +255,7 @@ times out, e.g.:
 
 #include <bongo/time.h>
 
-using std::chrono_literals;
+using namespace std::chrono_literals;
 
 int main() {
   bongo::time::timer t{5s};
@@ -277,7 +277,7 @@ the channel is drained:
 
 #include <bongo/time.h>
 
-using std::chrono_literals;
+using namespace std::chrono_literals;
 
 int main() {
   bongo::time::timer t{100ms};
