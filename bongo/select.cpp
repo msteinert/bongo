@@ -10,6 +10,7 @@
 #include "bongo/chan.h"
 #include "bongo/detail/chan.h"
 #include "bongo/error.h"
+#include "bongo/select.h"
 
 namespace bongo {
 namespace {
@@ -47,7 +48,7 @@ void selunlock(select_case const* cases, size_t* lockorder, int n) noexcept {
 
 struct cmp {
   select_case const* cases;
-  bool operator()(size_t left, size_t right) {
+  bool operator()(size_t left, size_t right) noexcept {
     return cases[left].chan < cases[right].chan;
   }
 };

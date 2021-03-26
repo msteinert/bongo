@@ -22,7 +22,7 @@ def version():
 class BongoConan(ConanFile):
     name = 'bongo'
     version = version()
-    license = 'No License'
+    license = 'BSD 3-clause'
     url = 'https://engrepo.exegy.net/exegy/bongo'
     description = 'A port of some APIs from Go to C++'
     generators = 'cmake'

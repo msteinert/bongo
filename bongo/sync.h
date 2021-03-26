@@ -8,6 +8,11 @@
 
 namespace bongo::sync {
 
+/**
+ * Wait groups can be used to synchronize groups of threads.
+ *
+ * - https://golang.org/pkg/sync/#WaitGroup
+ */
 class wait_group {
   std::mutex mutex_;
   std::condition_variable cond_;

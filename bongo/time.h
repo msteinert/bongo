@@ -11,6 +11,11 @@
 
 namespace bongo::time {
 
+/**
+ * A timer event.
+ *
+ * - https://golang.org/pkg/time/#Timer
+ */
 template <
   typename Rep,
   typename Period = std::ratio<1>,

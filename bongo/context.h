@@ -31,6 +31,11 @@ struct error : public std::runtime_error {
 inline std::exception_ptr canceled = std::make_exception_ptr(error{"context canceled"});
 inline std::exception_ptr deadline_exceeded = std::make_exception_ptr(error{"context deadline exceeded"});
 
+/**
+ * The context type is a port of Go contexts.
+ *
+ * - https://golang.org/pkg/context/#Context
+ */
 struct context {
   virtual ~context() {}
 
@@ -93,12 +98,39 @@ class value_context : public context {
   void remove(context* child) override;
 };
 
-// Factory functions
+/**
+ * Background is an empty top-level context.
+ *
+ * - https://golang.org/pkg/context/#Background
+ */
 context_type background();
+
+/**
+ * TODO is an empty top-level context for use as a placeholder.
+ *
+ * - https://golang.org/pkg/context/#TODO
+ */
 context_type todo();
+
+/**
+ * Cancel contexts are used to cancel a thread.
+ *
+ * - https://golang.org/pkg/context/#WithCancel
+ */
 cancelable_context with_cancel(context_type parent);
+
+/**
+ * Value contexts associate a key and value.
+ *
+ * - https://golang.org/pkg/context/#WithValue
+ */
 context_type with_value(context_type parent, std::string value, std::any key);
 
+/**
+ * Deadline contexts automatically cancel after the specified duration.
+ *
+ * - https://golang.org/pkg/context/#WithTimeout
+ */
 template <typename Rep, typename Period = std::ratio<1>>
 cancelable_context with_timeout(context_type parent, std::chrono::duration<Rep, Period> dur) {
   auto ctx = std::make_shared<cancel_context>(std::move(parent));
@@ -111,6 +143,11 @@ cancelable_context with_timeout(context_type parent, std::chrono::duration<Rep, 
   });
 }
 
+/**
+ * Timeout contexts automatically cancel at the specified time point.
+ *
+ * - https://golang.org/pkg/context/#WithDeadline
+ */
 template <typename Clock, typename Duration = typename Clock::duration>
 cancelable_context with_deadline(context_type parent, std::chrono::time_point<Clock, Duration> tp) {
   auto cur = parent->deadline();

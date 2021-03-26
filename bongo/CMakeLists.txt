@@ -2,9 +2,9 @@ include(GNUInstallDirs)
 set(CMAKE_INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/bongo)
 
 add_library(bongo STATIC
-  chan.cpp
   context.cpp
   detail/chan.cpp
+  select.cpp
   sync.cpp)
 
 target_compile_options(bongo

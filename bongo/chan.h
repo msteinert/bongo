@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <array>
 #include <atomic>
 #include <condition_variable>
 #include <cstdint>
@@ -11,12 +10,12 @@
 #include <memory>
 #include <mutex>
 #include <optional>
-#include <type_traits>
 #include <utility>
 #include <vector>
 
 #include <bongo/detail/chan.h>
 #include <bongo/error.h>
+#include <bongo/select.h>
 
 namespace bongo {
 
@@ -36,9 +35,10 @@ class chan : public detail::chan {
   using const_reference = T const&;
   using pointer = T*;
   using const_pointer = T const*;
-
   using send_type = value_type;
   using recv_type = std::optional<value_type>;
+
+  friend size_t select(select_case const* cases, size_t n);
 
   chan()
       : chan{0} {}
@@ -171,6 +171,7 @@ class chan : public detail::chan {
   void push_back(T const& value) { send(T{value}); }
   void push_back(T&& value) { send(std::move(value)); }
 
+ private:
   void reset(detail::select_value value_ptr) noexcept override {
     auto value = reinterpret_cast<std::optional<T>*>(value_ptr);
     value->reset();
@@ -230,9 +231,7 @@ class chan : public detail::chan {
 };
 
 /**
- * Move a value to a channel.
- *
- * If \p c is nullptr then this thread will block forever.
+ * Send a value to a channel.
  */
 template <typename T>
 void operator<<(chan<T>& c, T&& value) {
@@ -240,7 +239,9 @@ void operator<<(chan<T>& c, T&& value) {
 }
 
 /**
- * Move a value to a channel.
+ * Send a value to a channel.
+ *
+ * If \p c is nullptr then this thread will block forever.
  */
 template <typename T>
 void operator<<(chan<T>* c, T&& value) {
@@ -273,12 +274,17 @@ void operator<<(chan<T>* c, T const& value) {
   }
 }
 
-// Receive an optional value from a channel.
+/**
+ * Receive a value from a channel.
+ */
 template <typename T>
 void operator<<(std::optional<T>& value, chan<T>& c) {
   value = c.recv();
 }
 
+/**
+ * Receive a value from a channel.
+ */
 template <typename T>
 void operator<<(std::optional<T>& value, chan<T>* c) {
   if (c) {
@@ -313,147 +319,6 @@ void operator<<(T& value, chan<T>* c) {
   } else {
     detail::this_thread().forever_sleep();
   }
-}
-
-/**
- * Input to the select function.
- *
- * Use one of the factory functions to create a case:
- *
- * - send_select_case
- * - recv_select_case
- * - default_select_case
- */
-struct select_case {
-  detail::select_direction direction;
-  detail::chan* chan = nullptr;
-  detail::select_value value = nullptr;
-};
-
-/**
- * Create a send case for input to select.
- *
- * If this case is trigger the value \p v will be moved.
- *
- * \param c The channel participating in the send
- * \param v The value to send
- */
-template <typename T>
-select_case send_select_case(chan<T>& c, T&& v) {
-  return select_case{detail::select_send, std::addressof(c), std::addressof(v)};
-}
-
-/**
- * Create a send case for input to select.
- *
- * If this case is trigger the value \p v will be moved.
- *
- * \param c The channel participating in the send (can be nullptr)
- * \param v The value to send
- */
-template <typename T>
-select_case send_select_case(chan<T>* c, T&& v) {
-  return select_case{detail::select_send, c, std::addressof(v)};
-}
-
-/**
- * Create a receive case for input to select.
- *
- * \param c The channel participating in the receive
- * \param v Storage for receiving the value
- *
- * \returns A receive select case.
- */
-template <typename T>
-select_case recv_select_case(chan<T>& c, std::optional<T>& v) {
-  return select_case{detail::select_recv, std::addressof(c), std::addressof(v)};
-}
-
-/**
- * Create a receive case for input to select.
- *
- * \param c The channel participating in the receive (can be nullptr)
- * \param v Storage for receiving the value
- *
- * \returns A receive select case.
- */
-template <typename T>
-select_case recv_select_case(chan<T>* c, std::optional<T>& v) {
-  return select_case{detail::select_recv, c, std::addressof(v)};
-}
-
-/**
- * Create a default case case for input to select.
- *
- * \returns A default select case.
- */
-inline select_case default_select_case() {
-  return select_case{detail::select_default, nullptr, nullptr};
-}
-
-/**
- * Execute a select operation.
- *
- * This select implementation is similar to reflect.Select. The input is an
- * array of select cases. The output reflects the index that triggered the
- * select. The default case is triggered if no channels are ready.
- *
- * This function is the base implementation. One of the other overloads is most
- * likely more appropriate for user code.
- *
- * - https://golang.org/ref/spec#Select_statements
- * - https://tour.golang.org/concurrency/5
- * - https://golang.org/pkg/reflect/#Select
- *
- * @param cases An array of select cases
- * @param n The length of \p cases
- *
- * @returns The index in \p cases that triggered the select.
- */
-size_t select(select_case const* cases, size_t n);
-
-/**
- * Execute a select operation.
- *
- * Use this overload if you wish to dynamically change the select set at runtime.
- *
- * @param cases A vector of select cases
- *
- * @returns The index in \p cases that triggered the select.
- */
-inline size_t select(std::vector<select_case> const& cases) {
-  return select(cases.data(), cases.size());
-}
-
-/**
- * Execute a select operation.
- *
- * Use this overload if the number of cases is known at compile time.
- *
- * @param cases An array of select cases
- *
- * @returns The index in \p cases that triggered the select.
- */
-template <size_t N>
-size_t select(const select_case (&cases)[N]) {
-  return select(cases, N);
-}
-
-/**
- * Execute a select operation.
- *
- * Use this overload if the number of cases is known at compile time.
- *
- * @param args A parameter pack of select cases
- *
- * @returns The index in \p cases that triggered the select.
- */
-template <typename... Args>
-std::enable_if_t<
-  std::conjunction_v<std::is_same<select_case, Args>...>,
-size_t> select(Args&&... args) {
-  std::array<select_case, sizeof...(Args)> cases = {std::forward<Args>(args)...};
-  return select(cases.data(), cases.size());
 }
 
 }  // namespace bongo

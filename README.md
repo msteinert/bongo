@@ -107,17 +107,91 @@ int main() {
 ### Context
 
 The [context] package is implemented. This includes four usable context
-patterns via the following factory functions:
+patterns via the following factory functions. The following examples shows
+how to use a cancel context to signal that a thread should exit.
 
-- `bongo::context::with_cancel(parent)`
-- `bongo::context::with_timeout(parent, duration)`
-- `bongo::context::with_deadline(parent, time_point)`
-- `bongo::context::with_value(parent, key, value)`
+```cpp
+#include <iostream>
+#include <thread>
+#include <utility>
 
-The background and TODO contexts are also available:
+#include <bongo/chan.h>
+#include <bongo/context.h>
 
-- `bongo::context::background()`
-- `bongo::context::todo()`
+int main() {
+  auto [ctx, cancel] = bongo::context::with_cancel(bongo::context::background());
+  bongo::chan<int> dst;
+
+  // This thread generates integers and sends them to the returned channel.
+  // The main thread needs to cancel the context once it is done consuming
+  // generated integers so the thread will exit.
+  std::thread t{[&](std::shared_ptr<bongo::context> ctx) {
+    auto n = 1;
+    while (true) {
+      decltype(ctx)::recv_type done;
+      auto v = n;
+      switch (bongo::select(
+        bongo::recv_select_case(ctx->done(), done),
+        bongo::send_select_case(dst, std::move(v))
+      )) {
+      case 0:
+        return;  // Main thread is finished processing
+      case 1:
+        ++n;
+        break;
+      }
+    }
+  }, ctx};
+
+  for (auto n : dst) {
+    std::cout << n << "\n";
+    if (n == 5) {
+      break;
+    }
+  }
+
+  ctx->cancel();
+  t.join();
+}
+```
+
+The function `bongo::context::with_timeout` returns a cancelable context
+that is automatically canceled after the specified duration.
+
+The fucnction `bongo::context::with_deadline` returns a cancelable context
+that is automatically canceled at the specified point in time.
+
+A value context associates a key with a value. Value context should only be
+used to store request-scoped data.
+
+```cpp
+#include <any>
+#include <iostream>
+#include <string>
+
+#include <bongo/context.h>
+
+using namespace std::string_literals;
+
+int main() {
+  auto f = [](std::shared_ptr<bongo::context> ctx, std::string const& k) {
+    auto v = ctx->value(k);
+    if (!v.has_value()) {
+      std::cout << std::any_cast<std::string>(v) << "\n";
+      return;
+    }
+    std::cout << "key not found: " << k << "\n";
+  };
+
+  auto k = std::string{"language"};
+  auto ctx = bongo::context::with_value(bongo::context::background(), k, "Go"s);
+
+  f(ctx, k);
+  f(ctx, std::string{"color"});
+
+  return 0;
+}
+```
 
 [context]: https://golang.org/pkg/context/
 
@@ -184,7 +258,7 @@ times out, e.g.:
 using std::chrono_literals;
 
 int main() {
-  bongo::time::timer t{1s};
+  bongo::time::timer t{5s};
 
   decltype(t)::recv_type v;  // std::optional<std::chrono::seconds>
   v << t.c();
@@ -215,7 +289,7 @@ int main() {
 
   t.reset(50ms);
   v << t.c();
-  std::cout << "Timed out after " << v->count() << " seconds.\n";
+  std::cout << "Timed out after " << v->count() << " milliseconds.\n";
 
   return 0;
 }
