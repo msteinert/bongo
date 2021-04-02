@@ -14,6 +14,7 @@ cdash-clang-tidy:
     - CC=clang CXX=clang++ ctest -V -D CTEST_SOURCE_DIRECTORY:STRING=$(pwd)/.. -D CTEST_BINARY_DIRECTORY:STRING=$(pwd) -S ../cmake/scripts/ClangTidy.cmake
   only:
     - master
+  allow_failure: true
 
 cdash-coverage:
   stage: test
@@ -25,6 +26,7 @@ cdash-coverage:
     - ctest -V -D CTEST_SOURCE_DIRECTORY:STRING=$(pwd)/.. -D CTEST_BINARY_DIRECTORY:STRING=$(pwd) -S ../cmake/scripts/Coverage.cmake
   only:
     - master
+  allow_failure: true
 
 cdash-asan:
   stage: test
@@ -47,7 +49,6 @@ cdash-tsan:
     - ctest -V -D CTEST_SOURCE_DIRECTORY:STRING=$(pwd)/.. -D CTEST_BINARY_DIRECTORY:STRING=$(pwd) -S ../cmake/scripts/Tsan.cmake
   only:
     - master
-  allow_failure: true
 
 build-cent7-clang9:
   stage: test
