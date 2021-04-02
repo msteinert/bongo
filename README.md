@@ -317,7 +317,8 @@ int main() {
   }
 
   return 0;
-}```
+}
+```
 
 This example is somewhat pointless since joining the threads accomplishes
 the same result, however it illustrates how a wait group might be used, for
