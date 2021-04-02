@@ -45,10 +45,7 @@ class BongoConan(ConanFile):
     )
 
     def configure_cmake(self):
-        defs = {
-          'WITH_EXAMPLES': 'OFF',
-        }
-        cmake = CMake(self, generator='Ninja', defs=defs)
+        cmake = CMake(self, generator='Ninja')
         cmake.configure()
         return cmake
 
