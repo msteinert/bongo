@@ -24,7 +24,7 @@ class BongoConan(ConanFile):
     version = version()
     license = 'BSD 3-clause'
     url = 'https://engrepo.exegy.net/exegy/bongo'
-    description = 'A port of some APIs from Go to C++'
+    description = 'A port of some concurrency APIs from Go to C++'
     generators = 'cmake'
     settings = 'os', 'compiler', 'build_type', 'arch'
     scm = {
@@ -45,7 +45,10 @@ class BongoConan(ConanFile):
     )
 
     def configure_cmake(self):
-        cmake = CMake(self, generator='Ninja')
+        defs = {
+          'WITH_EXAMPLES': 'OFF',
+        }
+        cmake = CMake(self, generator='Ninja', defs=defs)
         cmake.configure()
         return cmake
 

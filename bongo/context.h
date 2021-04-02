@@ -4,18 +4,17 @@
 #pragma once
 
 #include <any>
-#include <exception>
-#include <functional>
 #include <chrono>
+#include <exception>
 #include <functional>
 #include <memory>
 #include <mutex>
 #include <optional>
 #include <stdexcept>
 #include <string>
-#include <variant>
 #include <unordered_set>
 #include <utility>
+#include <variant>
 
 #include <bongo/chan.h>
 #include <bongo/time.h>

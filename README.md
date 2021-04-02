@@ -82,7 +82,7 @@ int main() {
     bongo::select_case cases[] = {
       bongo::recv_select_case(c0, msg0),
       bongo::recv_select_case(c1, msg1),
-    }
+    };
     switch (bongo::select(cases)) {
     case 0:  // Value corresponds with index 0 in "cases"
       std::cout << "received: " << *msg0 << "\n";
@@ -112,6 +112,7 @@ how to use a cancel context to signal that a thread should exit.
 
 ```cpp
 #include <iostream>
+#include <memory>
 #include <thread>
 #include <utility>
 
@@ -125,10 +126,10 @@ int main() {
   // This thread generates integers and sends them to a channel. The main thread
   // needs to cancel the context once it is done consuming generated integers so
   // the thread will exit.
-  std::thread t{[&](std::shared_ptr<bongo::context> ctx) {
+  std::thread t{[&](std::shared_ptr<bongo::context::context> ctx) {
     auto n = 1;
     while (true) {
-      decltype(ctx)::recv_type done;
+      std::optional<std::monostate> done;
       auto v = n;
       switch (bongo::select(
         bongo::recv_select_case(ctx->done(), done),
@@ -150,7 +151,7 @@ int main() {
     }
   }
 
-  ctx->cancel();
+  cancel();
   t.join();
 }
 ```
@@ -158,14 +159,97 @@ int main() {
 The function `bongo::context::with_timeout` returns a cancelable context
 that is automatically canceled after the specified duration.
 
-The fucnction `bongo::context::with_deadline` returns a cancelable context
+```cpp
+#include <chrono>
+#include <iostream>
+#include <optional>
+#include <variant>
+
+#include <bongo/context.h>
+#include <bongo/time.h>
+
+using namespace std::chrono_literals;
+
+int main() {
+  // Pass a context with a timeout to tell a blocking function that should
+  // abandon its work after the timeout elapses.
+  auto [ctx, cancel] = bongo::context::with_timeout(bongo::context::background(), 1ms);
+  auto t = bongo::time::timer{1s};
+
+  decltype(t)::recv_type v0;
+  std::optional<std::monostate> v1;
+  switch (bongo::select(
+    bongo::recv_select_case(t.c(), v0),
+    bongo::recv_select_case(ctx->done(), v1)
+  )) {
+  case 0:
+    std::cout << "overslept\n";
+    break;
+  case 1:
+    try {
+      std::rethrow_exception(ctx->err());
+    } catch (std::exception const& e) {
+      std::cout << e.what() << "\n";  // prints "context deadline exceeded"
+    }
+    break;
+  }
+
+  cancel();
+  return 0;
+}
+```
+
+The function `bongo::context::with_deadline` returns a cancelable context
 that is automatically canceled at the specified point in time.
+
+```cpp
+#include <chrono>
+#include <iostream>
+#include <optional>
+#include <variant>
+
+#include <bongo/context.h>
+#include <bongo/time.h>
+
+using namespace std::chrono_literals;
+
+int main() {
+  auto d = std::chrono::system_clock::now() + 1ms;
+  auto [ctx, cancel] = bongo::context::with_deadline(bongo::context::background(), d);
+  auto t = bongo::time::timer{1s};
+
+  decltype(t)::recv_type v0;
+  std::optional<std::monostate> v1;
+  switch (bongo::select(
+    bongo::recv_select_case(t.c(), v0),
+    bongo::recv_select_case(ctx->done(), v1)
+  )) {
+  case 0:
+    std::cout << "overslept\n";
+    break;
+  case 1:
+    try {
+      std::rethrow_exception(ctx->err());
+    } catch (std::exception const& e) {
+      std::cout << e.what() << "\n";
+    }
+    break;
+  }
+
+  // Even though ctx will be expired, it is good practice to call its
+  // cancellation function in any case. Failure to do so may keep the context
+  // and its parent alive longer than necessary.
+  cancel();
+  return 0;
+}
+```
 
 A value context associates a key with a value. Value context should only be
 used to store request-scoped data.
 
 ```cpp
 #include <any>
+#include <memory>
 #include <iostream>
 #include <string>
 
@@ -174,10 +258,10 @@ used to store request-scoped data.
 using namespace std::string_literals;
 
 int main() {
-  auto f = [](std::shared_ptr<bongo::context> ctx, std::string const& k) {
+  auto f = [](std::shared_ptr<bongo::context::context> ctx, std::string const& k) {
     auto v = ctx->value(k);
-    if (!v.has_value()) {
-      std::cout << std::any_cast<std::string>(v) << "\n";
+    if (v.has_value()) {
+      std::cout << k << ": " << std::any_cast<std::string>(v) << "\n";
       return;
     }
     std::cout << "key not found: " << k << "\n";
@@ -203,36 +287,37 @@ future improvement might use a lockless algorithm.
 
 ```cpp
 #include <chrono>
-#include <iostream>
+#include <cstdio>
 #include <thread>
+#include <vector>
 
 #include <bongo/sync.h>
-#include <fmt/format.h>
 
 using namespace std::chrono_literals;
 
 int main() {
-  bongo::wait_group wg;
-  std::thread threads;
+  bongo::sync::wait_group wg;
+  std::vector<std::thread> threads;
 
   for (int i = 0; i < 5; ++i) {
-    wg.add();
+    wg.add(1);
     threads.emplace_back([&](int i) {
-      std::cout << fmt::format("Worker {} starting\n", i);
+      printf("Worker %d starting\n", i);
       std::this_thread::sleep_for(1s);
-      std::cout << fmt::format("Worker {} done\n", i);
+      printf("Worker %d done\n", i);
       wg.done();
     }, i);
   }
 
   wg.wait();
+  printf("All workers done\n");
+
   for (auto& t : threads) {
     t.join();
   }
 
   return 0;
-}
-```
+}```
 
 This example is somewhat pointless since joining the threads accomplishes
 the same result, however it illustrates how a wait group might be used, for
@@ -260,9 +345,11 @@ using namespace std::chrono_literals;
 int main() {
   bongo::time::timer t{5s};
 
-  decltype(t)::recv_type v;  // std::optional<std::chrono::seconds>
+  decltype(t)::recv_type v;
   v << t.c();
-  std::cout << "Timed out after " << v->count() << " seconds.\n";
+  std::cout << "Timed out after "
+            << std::chrono::duration_cast<std::chrono::seconds>(*v).count()
+            << " seconds.\n";
 
   return 0;
 }
@@ -283,13 +370,15 @@ int main() {
   bongo::time::timer t{100ms};
   decltype(t)::recv_type v;
 
-  if (t.stop()) {
+  if (!t.stop()) {
     v << t.c();
   }
 
   t.reset(50ms);
   v << t.c();
-  std::cout << "Timed out after " << v->count() << " milliseconds.\n";
+  std::cout << "Timed out after "
+            << std::chrono::duration_cast<std::chrono::milliseconds>(*v).count()
+            << " seconds.\n";
 
   return 0;
 }
