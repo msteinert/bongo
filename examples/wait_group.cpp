@@ -1,5 +1,6 @@
 #include <chrono>
 #include <cstdio>
+#include <iostream>
 #include <thread>
 #include <vector>
 
@@ -7,7 +8,7 @@
 
 using namespace std::chrono_literals;
 
-int main() {
+int main() try {
   bongo::sync::wait_group wg;
   std::vector<std::thread> threads;
 
@@ -29,4 +30,7 @@ int main() {
   }
 
   return 0;
+} catch (std::exception const& e) {
+  std::cerr << e.what() << "\n";
+  return 1;
 }

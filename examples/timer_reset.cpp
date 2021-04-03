@@ -5,7 +5,7 @@
 
 using namespace std::chrono_literals;
 
-int main() {
+int main() try {
   bongo::time::timer t{100ms};
   decltype(t)::recv_type v;
 
@@ -20,4 +20,7 @@ int main() {
             << " seconds.\n";
 
   return 0;
+} catch (std::exception const& e) {
+  std::cerr << e.what() << "\n";
+  return 1;
 }

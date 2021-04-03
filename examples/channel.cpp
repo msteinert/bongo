@@ -6,7 +6,7 @@
 
 using namespace std::string_literals;
 
-int main() {
+int main() try {
   bongo::chan<std::string> c;
 
   auto t = std::thread{[&]() {
@@ -19,4 +19,7 @@ int main() {
 
   t.join();
   return 0;
+} catch (std::exception const& e) {
+  std::cerr << e.what() << "\n";
+  return 1;
 }

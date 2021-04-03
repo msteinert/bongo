@@ -6,7 +6,7 @@
 #include <bongo/chan.h>
 #include <bongo/context.h>
 
-int main() {
+int main() try {
   auto [ctx, cancel] = bongo::context::with_cancel(bongo::context::background());
   bongo::chan<int> dst;
 
@@ -40,4 +40,8 @@ int main() {
 
   cancel();
   t.join();
+  return 0;
+} catch (std::exception const& e) {
+  std::cerr << e.what() << "\n";
+  return 1;
 }

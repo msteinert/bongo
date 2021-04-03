@@ -7,7 +7,7 @@
 
 using namespace std::string_literals;
 
-int main() {
+int main() try {
   auto f = [](std::shared_ptr<bongo::context::context> ctx, std::string const& k) {
     auto v = ctx->value(k);
     if (v.has_value()) {
@@ -24,4 +24,7 @@ int main() {
   f(ctx, std::string{"color"});
 
   return 0;
+} catch (std::exception const& e) {
+  std::cerr << e.what() << "\n";
+  return 1;
 }
