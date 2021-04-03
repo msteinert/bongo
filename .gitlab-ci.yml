@@ -14,7 +14,7 @@ cdash-clang-tidy:
     - . /opt/exegy/llvm-9/enable
     - mkdir build && cd build
     - conan config install https://repos.exegy.net/artifactory/generic-dev-support/conan_config.zip
-    - conan install -p clang-9 ..
+    - conan install -pr clang-9 ..
     - CC=clang CXX=clang++ ctest -V -D CTEST_SOURCE_DIRECTORY:STRING=$(pwd)/.. -D CTEST_BINARY_DIRECTORY:STRING=$(pwd) -S ../cmake/scripts/ClangTidy.cmake
   allow_failure: true
 
@@ -24,7 +24,7 @@ cdash-coverage:
   script:
     - mkdir build && cd build
     - conan config install https://repos.exegy.net/artifactory/generic-dev-support/conan_config.zip
-    - conan install -p gcc-8.libstdc++11 ..
+    - conan install -pr gcc-8.libstdc++11 ..
     - ctest -V -D CTEST_SOURCE_DIRECTORY:STRING=$(pwd)/.. -D CTEST_BINARY_DIRECTORY:STRING=$(pwd) -S ../cmake/scripts/Coverage.cmake
   allow_failure: true
 
@@ -34,7 +34,7 @@ cdash-asan:
   script:
     - mkdir build && cd build
     - conan config install https://repos.exegy.net/artifactory/generic-dev-support/conan_config.zip
-    - conan install -p gcc-8.libstdc++11 ..
+    - conan install -pr gcc-8.libstdc++11 ..
     - ctest -V -D CTEST_SOURCE_DIRECTORY:STRING=$(pwd)/.. -D CTEST_BINARY_DIRECTORY:STRING=$(pwd) -S ../cmake/scripts/Asan.cmake
 
 cdash-tsan:
@@ -43,7 +43,7 @@ cdash-tsan:
   script:
     - mkdir build && cd build
     - conan config install https://repos.exegy.net/artifactory/generic-dev-support/conan_config.zip
-    - conan install -p gcc-8.libstdc++11 ..
+    - conan install -pr gcc-8.libstdc++11 ..
     - ctest -V -D CTEST_SOURCE_DIRECTORY:STRING=$(pwd)/.. -D CTEST_BINARY_DIRECTORY:STRING=$(pwd) -S ../cmake/scripts/Tsan.cmake
 
 #
@@ -57,7 +57,7 @@ build-cent7-clang9:
     - . /opt/exegy/llvm-9/enable
     - mkdir build && cd build
     - conan config install https://repos.exegy.net/artifactory/generic-dev-support/conan_config.zip
-    - conan install -p clang-9 ..
+    - conan install -pr clang-9 ..
     - CC=clang CXX=clang++ cmake -GNinja ..
     - ninja
     - ctest --output-on-failure
@@ -71,7 +71,7 @@ build-cent7-gcc7:
     - . /opt/rh/devtoolset-7/enable
     - mkdir build && cd build
     - conan config install https://repos.exegy.net/artifactory/generic-dev-support/conan_config.zip
-    - conan install -p gcc-7 ..
+    - conan install -pr gcc-7 ..
     - cmake -GNinja ..
     - ninja
     - ctest --output-on-failure
@@ -85,7 +85,7 @@ build-cent7-gcc8:
     - . /opt/rh/devtoolset-8/enable
     - mkdir build && cd build
     - conan config install https://repos.exegy.net/artifactory/generic-dev-support/conan_config.zip
-    - conan install -p gcc-8 ..
+    - conan install -pr gcc-8 ..
     - cmake -GNinja ..
     - ninja
     - ctest --output-on-failure
@@ -111,8 +111,8 @@ deploy-cent7-gcc7:
   script:
     - . /opt/rh/devtoolset-7/enable
     - conan config install https://repos.exegy.net/artifactory/generic-dev-support/conan_config.zip
-    - conan create -p gcc-7 . exegy/stable
-    - conan create -p gcc-7.debug . exegy/stable
+    - conan create -pr gcc-7 . exegy/stable
+    - conan create -pr gcc-7.debug . exegy/stable
     - conan upload --all -c -r exegy 'bongo/*' -no recipe
   only:
     - master
@@ -123,8 +123,8 @@ deploy-cent7-clang9:
   script:
     - . /opt/exegy/llvm-9/enable
     - conan config install https://repos.exegy.net/artifactory/generic-dev-support/conan_config.zip
-    - conan create -p clang-9 . exegy/stable
-    - conan create -p clang-9.debug . exegy/stable
+    - conan create -pr clang-9 . exegy/stable
+    - conan create -pr clang-9.debug . exegy/stable
     - conan upload --all -c -r exegy 'bongo/*' -no recipe
   only:
     - master
@@ -135,8 +135,8 @@ deploy-cent7-gcc8:
   script:
     - . /opt/rh/devtoolset-8/enable
     - conan config install https://repos.exegy.net/artifactory/generic-dev-support/conan_config.zip
-    - conan create -p gcc-8 . exegy/stable
-    - conan create -p gcc-8.debug . exegy/stable
+    - conan create -pr gcc-8 . exegy/stable
+    - conan create -pr gcc-8.debug . exegy/stable
     - conan upload --all -c -r exegy 'bongo/*' -no recipe
   only:
     - master
@@ -146,8 +146,8 @@ deploy-cent8-gcc8:
   image: docker.exegy.net/exegy/centos8:20200728.1012
   script:
     - conan config install https://repos.exegy.net/artifactory/generic-dev-support/conan_config.zip
-    - conan create -p gcc-8.libstdc++11 . exegy/stable
-    - conan create -p gcc-8.libstdc++11.debug . exegy/stable
+    - conan create -pr gcc-8.libstdc++11 . exegy/stable
+    - conan create -pr gcc-8.libstdc++11.debug . exegy/stable
     - conan upload --all -c -r exegy 'bongo/*' -no recipe
   only:
     - master
@@ -157,8 +157,8 @@ deploy-ubuntu18-gcc7:
   image: docker.exegy.net/hwapi/ubuntu18-gcc7:20210402.0951
   script:
     - conan config install https://repos.exegy.net/artifactory/generic-dev-support/conan_config.zip
-    - conan create -p gcc-7.libstdc++11 . exegy/stable
-    - conan create -p gcc-7.libstdc++11.debug . exegy/stable
+    - conan create -pr gcc-7.libstdc++11 . exegy/stable
+    - conan create -pr gcc-7.libstdc++11.debug . exegy/stable
     - conan upload --all -c -r exegy 'bongo/*' -no recipe
   only:
     - master
