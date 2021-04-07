@@ -41,7 +41,7 @@ class BongoConan(ConanFile):
         'fPIC=True',
     )
     build_requires = (
-        'Catch2/2.9.2@catchorg/stable',
+        'catch2/2.13.4',
     )
 
     def configure_cmake(self):

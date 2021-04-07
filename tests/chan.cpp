@@ -15,13 +15,13 @@
 using namespace std::chrono_literals;
 
 TEST_CASE("Test channels", "[chan]") {
-  int n = 20;
-  for (int cap = 0; cap < n; ++cap) {
+  size_t n = 20;
+  for (size_t cap = 0; cap < n; ++cap) {
     CAPTURE(cap);
 
     {
       // Ensure receive from empty chan blocks
-      auto c = bongo::chan<int>(cap);
+      auto c = bongo::chan<int>{cap};
       auto recv1 = false;
       auto t = std::thread{[&]() {
         int v;
@@ -56,8 +56,8 @@ TEST_CASE("Test channels", "[chan]") {
 
     {
       // Ensure that send to a full chan blocks
-      auto c = bongo::chan<int>(cap);
-      for (int i = 0; i < cap; ++i) {
+      auto c = bongo::chan<int>{cap};
+      for (int i = 0; i < static_cast<int>(cap); ++i) {
         c << i;
       }
       std::atomic_bool sent = false;
@@ -84,12 +84,12 @@ TEST_CASE("Test channels", "[chan]") {
 
     {
       // Ensure that we receive 0 from closed chan
-      auto c = bongo::chan<int>(cap);
-      for (int i = 0; i < cap; ++i) {
+      auto c = bongo::chan<int>{cap};
+      for (int i = 0; i < static_cast<int>(cap); ++i) {
         c << i;
       }
       c.close();
-      for (int i = 0; i < cap; ++i) {
+      for (int i = 0; i < static_cast<int>(cap); ++i) {
         int v;
         v << c;
         REQUIRE(v == i);
@@ -104,7 +104,7 @@ TEST_CASE("Test channels", "[chan]") {
 
     {
       // Ensure that close unblocks receive
-      auto c = bongo::chan<int>(cap);
+      auto c = bongo::chan<int>{cap};
       auto done  = bongo::chan<bool>();
       auto t = std::thread{[&]() {
         std::optional<int> v;
@@ -122,7 +122,7 @@ TEST_CASE("Test channels", "[chan]") {
     {
       // Send 100 integers,
       // ensure that we receive them non-corrupted in FIFO order
-      auto c = bongo::chan<int>(cap);
+      auto c = bongo::chan<int>{cap};
       auto t = std::thread([&]() {
         for (int i = 0; i < 100; ++i) {
           c << i;
@@ -161,7 +161,7 @@ TEST_CASE("Test channels", "[chan]") {
           }
         });
       }
-      auto done = bongo::chan<std::map<int, int>>();
+      auto done = bongo::chan<std::map<int, int>>{};
       for (int p = 0; p < P; ++p) {
         threads.emplace_back([&]() {
           auto recv = std::map<int, int>{};
@@ -192,10 +192,10 @@ TEST_CASE("Test channels", "[chan]") {
 
     {
       // Test len/cap
-      auto c = bongo::chan<int>(cap);
+      auto c = bongo::chan<int>{cap};
       REQUIRE(c.len() == 0);
       REQUIRE(c.cap() == cap);
-      for (int i = 0; i < cap; ++i) {
+      for (int i = 0; i < static_cast<int>(cap); ++i) {
         c << i;
       }
       REQUIRE(c.len() == cap);
@@ -208,7 +208,7 @@ TEST_CASE("Non-blocking receive race", "[chan]") {
   std::atomic_int failures = 0;
   int n = 1000;
   for (int i = 0; i < n; ++i) {
-    auto c = bongo::chan<int>(1);
+    auto c = bongo::chan<int>{1};
     c << 1;
     auto t = std::thread{[&]() {
       std::optional<int> v;
@@ -233,10 +233,10 @@ TEST_CASE("Non-blocking receive race", "[chan]") {
 
 TEST_CASE("Non-blocking select race2", "[chan]") {
   int n = 1000;
-  auto done = bongo::chan<bool>(1);
+  auto done = bongo::chan<bool>{1};
   for (int i = 0; i < n; ++i) {
-    auto c1 = bongo::chan<int>(1);
-    auto c2 = bongo::chan<int>();
+    auto c1 = bongo::chan<int>{1};
+    auto c2 = bongo::chan<int>{};
     c1 << 1;
     auto t = std::thread{[&]() {
       std::optional<int> v1, v2;
@@ -436,16 +436,16 @@ TEST_CASE("Select stress", "[chan]") {
 
 TEST_CASE("Select fairness", "[chan]") {
   int const trials = 10000;
-  auto c1 = bongo::chan<int>(trials + 1);
-  auto c2 = bongo::chan<int>(trials + 1);
+  auto c1 = bongo::chan<int>{trials + 1};
+  auto c2 = bongo::chan<int>{trials + 1};
   for (int i = 0; i < trials; ++i) {
     c1 << 1;
     c2 << 2;
   }
-  auto c3 = bongo::chan<int>();
-  auto c4 = bongo::chan<int>();
-  auto out = bongo::chan<int>();
-  auto done = bongo::chan<int>();
+  auto c3 = bongo::chan<int>{};
+  auto c4 = bongo::chan<int>{};
+  auto out = bongo::chan<int>{};
+  auto done = bongo::chan<int>{};
   auto t = std::thread{[&]() {
     while (true) {
       std::optional<int> b;
