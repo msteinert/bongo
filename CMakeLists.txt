@@ -61,14 +61,11 @@ endif()
 
 # Attempt to load Conan
 # https://conan.io
-include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake
-  OPTIONAL
-  RESULT_VARIABLE __conan)
-if(__conan)
-  conan_basic_setup(NO_OUTPUT_DIRS SKIP_STD)
-endif()
+include(${CMAKE_BINARY_DIR}/conan_paths.cmake OPTIONAL)
 
+set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads)
+
 add_subdirectory(bongo)
 if(WITH_EXAMPLES)
   add_subdirectory(examples)
@@ -80,8 +77,6 @@ include(CTest)
 if(BUILD_TESTING)
   find_package(Catch2)
   if(TARGET Catch2::Catch2)
-    set(THREADS_PREFER_PTHREAD_FLAG ON)
-    find_package(Threads REQUIRED)
     add_subdirectory(tests)
   endif()
 endif()

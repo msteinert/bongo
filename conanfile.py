@@ -25,7 +25,7 @@ class BongoConan(ConanFile):
     license = 'BSD 3-clause'
     url = 'https://engrepo.exegy.net/exegy/bongo'
     description = 'A port of some concurrency APIs from Go to C++'
-    generators = 'cmake'
+    generators = 'cmake_find_package', 'cmake_paths'
     settings = 'os', 'compiler', 'build_type', 'arch'
     scm = {
         'type': 'git',
@@ -41,7 +41,7 @@ class BongoConan(ConanFile):
         'fPIC=True',
     )
     build_requires = (
-        'Catch2/2.9.2@catchorg/stable',
+        'catch2/2.13.7',
     )
 
     def configure_cmake(self):
