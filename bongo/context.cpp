@@ -4,6 +4,8 @@
 #include <exception>
 #include <memory>
 #include <mutex>
+#include <string>
+#include <string_view>
 #include <utility>
 #include <variant>
 
@@ -30,7 +32,7 @@ std::exception_ptr cancel_context::err() {
   return err_;
 }
 
-std::any cancel_context::value(std::string const& k) {
+std::any cancel_context::value(std::string_view k) {
   return parent_->value(k);
 }
 
@@ -80,7 +82,7 @@ std::exception_ptr value_context::err() {
   return parent_->err();
 }
 
-std::any value_context::value(std::string const& k) {
+std::any value_context::value(std::string_view k) {
   return k == key_ ? value_ : parent_->value(k);
 }
 

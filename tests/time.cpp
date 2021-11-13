@@ -49,13 +49,6 @@ TEST_CASE("Reset after timeout", "[time]") {
   REQUIRE(v.value() >= 2ms);
 }
 
-TEST_CASE("Reset error", "[time]") {
-  CHECK_THROWS_AS([]() {
-    bongo::time::timer t{1ms};
-    t.reset(2ms);
-  }(), bongo::logic_error);
-}
-
 TEST_CASE("After function", "[time]") {
   bongo::chan<std::string> c;
   bongo::time::timer t{1ms, [&]() {

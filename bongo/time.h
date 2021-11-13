@@ -4,7 +4,6 @@
 
 #include <chrono>
 #include <condition_variable>
-#include <functional>
 #include <mutex>
 #include <thread>
 
@@ -17,11 +16,7 @@ namespace bongo::time {
  *
  * - https://golang.org/pkg/time/#Timer
  */
-template <
-  typename Rep,
-  typename Period = std::ratio<1>,
-  typename Clock = std::chrono::system_clock
->
+template <typename Clock = std::chrono::system_clock>
 class timer {
  public:
   using chan_type = chan<typename Clock::duration>;
@@ -29,6 +24,7 @@ class timer {
 
  private:
   chan_type chan_ = chan_type{1};
+  chan<typename Clock::duration> wait_;
   std::mutex mutex_;
   std::condition_variable cond_;
   bool active_ = false;
@@ -36,26 +32,33 @@ class timer {
 
  public:
   timer() = default;
-  timer(std::chrono::duration<Rep, Period> d)
-      : active_{true}
-      , thread_{&timer::start, this, std::move(d)} {}
-  timer(std::chrono::duration<Rep, Period> d, std::function<void()> f)
-      : active_{true}
-      , thread_{&timer::start0, this, std::move(d), std::move(f)} {}
+  timer(typename Clock::duration d)
+      : thread_{&timer::start, this} { wait_ << d; }
+  template <typename Function>
+  timer(typename Clock::duration d, Function&& fn)
+      : thread_{&timer::start0<Function>, this, std::forward<Function>(fn)} { wait_ << d; }
 
-  ~timer() { stop(); }
+  ~timer() try {
+    stop();
+    wait_.close();
+    if (thread_.joinable()) {
+      thread_.join();
+    }
+  } catch (...) {}
+
+  timer(timer const& other) = delete;
+  timer& operator=(timer const& other) = delete;
+  timer(timer&& other) = delete;
+  timer& operator=(timer&& other) = delete;
+
   chan_type& c() { return chan_; }
 
-  void reset(std::chrono::duration<Rep, Period> d) {
+  bool reset(typename Clock::duration d) {
     std::unique_lock lock{mutex_};
-    reset_locked();
-    thread_ = std::thread{&timer::start, this, std::move(d)};
-  }
-
-  void reset(std::chrono::duration<Rep, Period> d, std::function<void()> f) {
-    std::unique_lock lock{mutex_};
-    reset_locked();
-    thread_ = std::thread{&timer::start0, this, std::move(d), std::move(f)};
+    bool active = active_;
+    lock.unlock();
+    wait_ << d;
+    return active;
   }
 
   bool stop() {
@@ -66,46 +69,61 @@ class timer {
       lock.unlock();
       cond_.notify_one();
     }
-    if (thread_.joinable()) {
-      thread_.join();
-    }
     return active;
   }
 
  private:
-  void reset_locked() {
-    if (active_) {
-      throw logic_error{"reset on active timer"};
-    }
-    if (thread_.joinable()) {
-      thread_.join();
-    }
-    active_ = true;
-  }
-
-  bool stopped(std::chrono::duration<Rep, Period> const& d) {
-    std::unique_lock lock{mutex_};
-    std::cv_status status = std::cv_status::no_timeout;
-    while (active_) {
-      status = cond_.wait_for(lock, d);
-      if (status == std::cv_status::timeout) {
-        break;
+  void start() {
+    typename decltype(wait_)::recv_type dur;
+    for (;;) {
+      // Wait for a new duration
+      dur << wait_;
+      if (!dur.has_value()) {
+        return;
       }
-    }
-    active_ = false;
-    return status == std::cv_status::no_timeout ? true : false;
-  }
 
-  void start(std::chrono::duration<Rep, Period>&& d) {
-    auto begin = Clock::now();
-    if (!stopped(d)) {
+      // Begin the timer
+      std::unique_lock lock{mutex_};
+      active_ = true;
+      auto begin = Clock::now();
+      cond_.wait_for(lock, *dur);
+
+      // Check if the timer was canceled
+      if (!active_) {
+        continue;
+      }
+
+      // Timer fired
+      active_ = false;
+      lock.unlock();
       chan_ << Clock::now() - begin;
     }
   }
 
-  void start0(std::chrono::duration<Rep, Period>&& d, std::function<void()>&& f) {
-    if (!stopped(d)) {
-      f();
+  template <typename Function>
+  void start0(Function&& fn) {
+    typename decltype(wait_)::recv_type dur;
+    for (;;) {
+      // Wait for a new duration
+      dur << wait_;
+      if (!dur.has_value()) {
+        return;
+      }
+
+      // Begin the timer
+      std::unique_lock lock{mutex_};
+      active_ = true;
+      cond_.wait_for(lock, *dur);
+
+      // Check if the timer was canceled
+      if (!active_) {
+        continue;
+      }
+
+      // Timer fired
+      active_ = false;
+      lock.unlock();
+      fn();
     }
   }
 };

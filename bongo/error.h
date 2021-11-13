@@ -7,8 +7,7 @@
 
 namespace bongo {
 
-struct logic_error : public std::logic_error {
-  using std::logic_error::logic_error;
-};
+struct error : public std::runtime_error { using std::runtime_error::runtime_error; };
+struct logic_error : public error { using error::error; };
 
 }  // namespace bongo

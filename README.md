@@ -388,12 +388,7 @@ int main() {
 One major difference between this implementation and the Go implementation
 is how `timer.AfterFunc()` is emulated. In the Go implementation the
 callback occurs in a separate goroutine. In this package the callback
-function is called in the timer thread. This means that the timer itself
-cannot be manipulated via `bongo::timer::stop()` or `bongo::timer::reset()`
-from the callback function. If you need functionality similar to the Go
-package it can be implemented by managing your own thread that listens to
-the timeout channel.
-
+function is called in the timer thread.
 
 [Timer]: https://golang.org/pkg/time/#Timer
 [time]: https://golang.org/pkg/time/

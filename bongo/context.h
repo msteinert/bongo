@@ -12,6 +12,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <unordered_set>
 #include <utility>
 #include <variant>
@@ -42,7 +43,7 @@ struct context {
   virtual std::optional<std::chrono::system_clock::time_point> deadline() { return std::nullopt; }
   virtual chan<std::monostate>* done() { return nullptr; }
   virtual std::exception_ptr err() { return nullptr; }
-  virtual std::any value(std::string const&) { return std::any{}; }
+  virtual std::any value(std::string_view) { return std::any{}; }
 
   // Implementation API
   virtual void cancel(bool, std::exception_ptr) {}
@@ -67,7 +68,7 @@ class cancel_context : public context {
   std::optional<std::chrono::system_clock::time_point> deadline() override;
   chan<std::monostate>* done() override;
   std::exception_ptr err() override;
-  std::any value(std::string const& k) override;
+  std::any value(std::string_view) override;
 
   void cancel();
   void cancel(bool remove, std::exception_ptr err) override;
@@ -90,7 +91,7 @@ class value_context : public context {
   std::optional<std::chrono::system_clock::time_point> deadline() override;
   chan<std::monostate>* done() override;
   std::exception_ptr err() override;
-  std::any value(std::string const& k) override;
+  std::any value(std::string_view) override;
 
   void cancel(bool remove, std::exception_ptr err) override;
   void add(context* child) override;
@@ -130,11 +131,11 @@ context_type with_value(context_type parent, std::string value, std::any key);
  *
  * - https://golang.org/pkg/context/#WithTimeout
  */
-template <typename Rep, typename Period = std::ratio<1>>
-cancelable_context with_timeout(context_type parent, std::chrono::duration<Rep, Period> dur) {
+template <typename Clock = std::chrono::system_clock>
+cancelable_context with_timeout(context_type parent, typename Clock::duration dur) {
   auto ctx = std::make_shared<cancel_context>(std::move(parent));
   ctx->deadline(std::chrono::system_clock::now() + dur);
-  auto timer = std::make_shared<bongo::time::timer<Rep, Period>>(
+  auto timer = std::make_shared<bongo::time::timer<Clock>>(
       dur, [ctx]() { ctx->cancel(true, deadline_exceeded); });
   return std::make_pair(ctx, [timer, ctx]() {
     timer->stop();
@@ -147,8 +148,8 @@ cancelable_context with_timeout(context_type parent, std::chrono::duration<Rep, 
  *
  * - https://golang.org/pkg/context/#WithDeadline
  */
-template <typename Clock, typename Duration = typename Clock::duration>
-cancelable_context with_deadline(context_type parent, std::chrono::time_point<Clock, Duration> tp) {
+template <typename Clock = std::chrono::system_clock>
+cancelable_context with_deadline(context_type parent, typename Clock::time_point tp) {
   auto cur = parent->deadline();
   auto ctx = std::make_shared<cancel_context>(std::move(parent));
   if (cur && *cur < tp) {
@@ -162,8 +163,10 @@ cancelable_context with_deadline(context_type parent, std::chrono::time_point<Cl
     ctx->cancel(true, deadline_exceeded);
     return std::make_pair(ctx, [ctx]() { ctx->cancel(false, canceled); });
   }
-  auto timer = std::make_shared<bongo::time::timer<typename Clock::rep, typename Clock::period>>(
-      dur, [ctx]() { ctx->cancel(true, deadline_exceeded); });
+  auto timer = std::make_shared<bongo::time::timer<Clock>>(
+      dur, [ctx]() {
+        ctx->cancel(true, deadline_exceeded);
+      });
   return std::make_pair(ctx, [timer, ctx]() {
     timer->stop();
     ctx->cancel();
