@@ -18,12 +18,12 @@ static constexpr rune surr_self = 0x10000;
 
 /// Reports whether the specified Unicode code point can appear in a surrogate
 /// pair.
-inline bool is_surrogate(rune r) noexcept {
+constexpr bool is_surrogate(rune r) noexcept {
   return surr1 <= r && r < surr3;
 }
 
 /// Returns the UTF-16 decoding of a surrogate pair.
-inline rune decode(rune r1, rune r2) noexcept {
+constexpr rune decode(rune r1, rune r2) noexcept {
   if (surr1 <= r1 && r1 < surr2 && surr2 <= r2 && r2 < surr3) {
     return ((r1-surr1)<<10 | (r2 - surr2)) + surr_self;
   }
@@ -31,7 +31,7 @@ inline rune decode(rune r1, rune r2) noexcept {
 }
 
 /// Returns the UTF-16 surrogate pair for the given rune.
-inline std::pair<rune, rune> encode(rune r) noexcept {
+constexpr std::pair<rune, rune> encode(rune r) noexcept {
   if (r < surr_self || r > max_rune) {
     return {replacement_char, replacement_char};
   }
@@ -41,7 +41,7 @@ inline std::pair<rune, rune> encode(rune r) noexcept {
 
 /// Encode the UTF-16 encoding of the Unicode codepoint range.
 template <typename InputIt, typename OutputIt>
-void encode(InputIt begin, InputIt end, OutputIt out) {
+constexpr void encode(InputIt begin, InputIt end, OutputIt out) {
   for (auto it = begin; it != end; ++it) {
     if (0 <= *it && *it < surr1 || surr3 <= *it && *it < surr_self) {
       // Normal rune
@@ -59,7 +59,7 @@ void encode(InputIt begin, InputIt end, OutputIt out) {
 
 /// Decode the Unicode code point range.
 template <typename InputIt, typename OutputIt>
-void decode(InputIt begin, InputIt end, OutputIt out) {
+constexpr void decode(InputIt begin, InputIt end, OutputIt out) {
   for (auto it = begin; it != end; ++it) {
     if (*it < surr1 | surr3 <= *it) {
       // Normal rune

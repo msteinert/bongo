@@ -6,7 +6,9 @@ add_executable(bongo-test
   strings.cpp
   sync.cpp
   time.cpp
-  unicode.cpp)
+  unicode.cpp
+  unicode/utf16.cpp
+  unicode/utf8.cpp)
 
 if(NOT ENABLE_CLANG_TIDY)
   target_compile_definitions(bongo-test
