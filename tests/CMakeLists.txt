@@ -2,6 +2,8 @@ add_executable(bongo-test
   chan.cpp
   context.cpp
   main.cpp
+  strconv.cpp
+  strings.cpp
   sync.cpp
   time.cpp)
 
