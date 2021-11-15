@@ -61,5 +61,5 @@ TEST_CASE("Wait group misuse", "[sync]") {
     wg.add(1);
     wg.done();
     wg.done();
-  }(), bongo::logic_error);
+  }(), std::logic_error);
 }

@@ -10,11 +10,11 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
 #include <bongo/detail/chan.h>
-#include <bongo/error.h>
 #include <bongo/select.h>
 
 namespace bongo {
@@ -53,7 +53,7 @@ class chan : public detail::chan {
   void send(T&& value) {
     std::unique_lock chan_lock{mutex_};
     if (closed_.load(std::memory_order_relaxed)) {
-      throw logic_error{"send on closed channel"};
+      throw std::logic_error{"send on closed channel"};
     }
     if (auto t = recvq_.dequeue()) {
       // Send to waiting receiver
@@ -71,7 +71,7 @@ class chan : public detail::chan {
         chan_lock.unlock();
         t.parent_.cond_.wait(lock, [&t]() { return t.done_waiting_; });
         if (t.closed_) {
-          throw logic_error{"send on closed channel"};
+          throw std::logic_error{"send on closed channel"};
         }
       }
     }
@@ -110,7 +110,7 @@ class chan : public detail::chan {
   void close() {
     std::unique_lock chan_lock{mutex_};
     if (closed_.load(std::memory_order_relaxed)) {
-      throw logic_error{"close of closed channel"};
+      throw std::logic_error{"close of closed channel"};
     }
     closed_.store(true, std::memory_order_relaxed);
     std::vector<detail::waitq::thread*> threads;

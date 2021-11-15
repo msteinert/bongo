@@ -6,10 +6,10 @@
 #include <mutex>
 #include <optional>
 #include <random>
+#include <stdexcept>
 
 #include "bongo/chan.h"
 #include "bongo/detail/chan.h"
-#include "bongo/error.h"
 #include "bongo/select.h"
 
 namespace bongo {
@@ -69,7 +69,7 @@ size_t select(select_case const* cases, size_t size) {
     switch (cases[i].direction) {
     case detail::select_default:
       if (dflt.has_value()) {
-        throw logic_error{"multiple defaults in switch"};
+        throw std::logic_error{"multiple defaults in switch"};
       }
       dflt = i;
       continue;
@@ -83,7 +83,7 @@ size_t select(select_case const* cases, size_t size) {
       break;
 
     default:
-      throw logic_error{"invalid select case"};
+      throw std::logic_error{"invalid select case"};
     }
   }
 
@@ -126,7 +126,7 @@ size_t select(select_case const* cases, size_t size) {
     if (cas.direction == detail::select_send) {
       if (c->closed_.load(std::memory_order_relaxed)) {
         selunlock(cases, lockorder, n);
-        throw logic_error{"send on closed channel"};
+        throw std::logic_error{"send on closed channel"};
       }
       auto* t = c->recvq_.dequeue();
       if (t) {
@@ -158,7 +158,7 @@ size_t select(select_case const* cases, size_t size) {
       }
     } else {
       selunlock(cases, lockorder, n);
-      throw logic_error{"unreachable"};
+      throw std::logic_error{"unreachable"};
     }
   }
 
@@ -187,7 +187,7 @@ size_t select(select_case const* cases, size_t size) {
       break;
     default:
       selunlock(cases, lockorder, n);
-      throw logic_error{"unreachable"};
+      throw std::logic_error{"unreachable"};
     }
   }
 
@@ -226,19 +226,19 @@ size_t select(select_case const* cases, size_t size) {
         break;
       default:
         selunlock(cases, lockorder, n);
-        throw logic_error{"unreachable"};
+        throw std::logic_error{"unreachable"};
       }
     }
   }
 
   if (!selected_case) {
     selunlock(cases, lockorder, n);
-    throw logic_error{"bad wakeup"};
+    throw std::logic_error{"bad wakeup"};
   } else {
     if (selected_case->direction == detail::select_send) {
       if (selected_thread->closed_) {
         selunlock(cases, lockorder, n);
-        throw logic_error{"send on closed channel"};
+        throw std::logic_error{"send on closed channel"};
       }
     }
   }

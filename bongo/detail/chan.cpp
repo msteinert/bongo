@@ -3,9 +3,9 @@
 
 #include <atomic>
 #include <mutex>
+#include <stdexcept>
 
 #include "bongo/detail/chan.h"
-#include "bongo/error.h"
 
 namespace bongo::detail {
 
@@ -18,7 +18,7 @@ void detail::thread::forever_sleep() {
   auto& t = detail::this_thread();
   std::unique_lock lock{t.mutex_};
   t.cond_.wait(lock, []() { return false; });
-  throw logic_error{"unreachable"};
+  throw std::logic_error{"unreachable"};
 }
 
 void waitq::enqueue(waitq::thread* t) noexcept {

@@ -5,6 +5,7 @@ add_library(bongo STATIC
   context/context.cpp
   context/error.cpp
   detail/chan.cpp
+  strconv/error.cpp
   select.cpp
   sync.cpp)
 

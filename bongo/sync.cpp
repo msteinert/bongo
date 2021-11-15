@@ -3,8 +3,8 @@
 
 #include <memory>
 #include <mutex>
+#include <stdexcept>
 
-#include "bongo/error.h"
 #include "bongo/sync.h"
 
 namespace bongo::sync {
@@ -13,7 +13,7 @@ void wait_group::add(int n) {
   std::unique_lock lock{mutex_};
   state_ += n;
   if (state_ < 0) {
-    throw logic_error{"negative counter"};
+    throw std::logic_error{"negative counter"};
   }
   if (state_ == 0) {
     lock.unlock();

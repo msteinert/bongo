@@ -20,7 +20,7 @@ TEST_CASE("Expiration", "[time]") {
 }
 
 TEST_CASE("Reset after stop", "[time]") {
-  bongo::time::timer t{100ms};
+  bongo::time::timer t{1s};
   if (!t.stop()) {
     FAIL_CHECK("timer expired");
   }
