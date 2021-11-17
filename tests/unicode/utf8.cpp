@@ -121,6 +121,7 @@ TEST_CASE("UTF-8", "[unicode][utf8]") {
     };
     for (auto const& ts : test_strings) {
       for (auto [rune, view] : test_cases) {
+        CAPTURE(rune);
         auto str = std::string{view};
         for (auto s : std::vector<std::string>{ts + str, str + ts, ts + str + ts}) {
           auto index = std::vector<std::tuple<size_t, bongo::rune>>{};
@@ -205,6 +206,7 @@ TEST_CASE("Invalid sequence", "[unicode][utf8]") {
   };
   for (auto s : test_cases) {
     auto [r, size] = bongo::unicode::utf8::decode(s.begin(), s.end());
+    CAPTURE(size);
     CHECK(r == bongo::unicode::utf8::rune_error);
   }
 }

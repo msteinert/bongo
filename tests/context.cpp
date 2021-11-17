@@ -45,7 +45,8 @@ TEST_CASE("TODO context", "[context]") {
 
 TEST_CASE("With cancel context", "[context]") {
   auto [c1, cancel1] = bongo::context::with_cancel(bongo::context::background());
-  auto [c2, cancel2] = bongo::context::with_cancel(c1);
+  auto r2 = bongo::context::with_cancel(c1);
+  auto c2 = std::get<0>(r2);
 
   auto check1 = [](bongo::context::context& c) {
     REQUIRE(c.done() != nullptr);
@@ -87,7 +88,8 @@ TEST_CASE("With cancel context", "[context]") {
 }
 
 TEST_CASE("Timeout context", "[context]") {
-  auto [c, cancel] = bongo::context::with_timeout(bongo::context::background(), 1ms);
+  auto r = bongo::context::with_timeout(bongo::context::background(), 1ms);
+  auto c = std::get<0>(r);
   auto t = bongo::time::timer{5s};
 
   std::optional<std::chrono::system_clock::duration> d;
@@ -106,8 +108,10 @@ TEST_CASE("Timeout context", "[context]") {
 }
 
 TEST_CASE("Wrapped timeout context", "[context]") {
-  auto [c1, cancel1] = bongo::context::with_timeout(bongo::context::background(), 1ms);
-  auto [c2, cancel2] = bongo::context::with_timeout(c1, 1min);
+  auto r1 = bongo::context::with_timeout(bongo::context::background(), 1ms);
+  auto c1 = std::get<0>(r1);
+  auto r2 = bongo::context::with_timeout(c1, 1min);
+  auto c2 = std::get<0>(r2);
   auto t = bongo::time::timer{5s};
 
   std::optional<std::chrono::system_clock::duration> d;
@@ -142,8 +146,9 @@ TEST_CASE("Canceled timeout context", "[context]") {
 }
 
 TEST_CASE("Deadline context", "[context]") {
-  auto [c, cancel] = bongo::context::with_deadline(
+  auto r = bongo::context::with_deadline(
       bongo::context::background(), std::chrono::system_clock::now() + 1ms);
+  auto c = std::get<0>(r);
   auto t = bongo::time::timer{5s};
 
   std::optional<std::chrono::system_clock::duration> d;
@@ -162,10 +167,12 @@ TEST_CASE("Deadline context", "[context]") {
 }
 
 TEST_CASE("Wrapped deadline context", "[context]") {
-  auto [c1, cancel1] = bongo::context::with_deadline(
+  auto r1 = bongo::context::with_deadline(
       bongo::context::background(), std::chrono::system_clock::now() + 1ms);
-  auto [c2, cancel2] = bongo::context::with_deadline(
+  auto c1 = std::get<0>(r1);
+  auto r2 = bongo::context::with_deadline(
       c1, std::chrono::system_clock::now() + 1min);  // NOLINT
+  auto c2 = std::get<0>(r2);
   auto t = bongo::time::timer{5s};
 
   std::optional<std::chrono::system_clock::duration> d;
@@ -233,9 +240,9 @@ TEST_CASE("Value context", "[context]") {
 
 TEST_CASE("Parent cancels child", "[context]") {
   auto [parent, cancel_parent] = bongo::context::with_cancel(bongo::context::background());
-  auto [child, cancel_child] = bongo::context::with_cancel(parent);
+  auto child = std::get<0>(bongo::context::with_cancel(parent));
   auto value = bongo::context::with_value(parent, "key"s, "value"s);
-  auto [timer, cancel_timer] = bongo::context::with_timeout(value, 5min);
+  auto timer = std::get<0>(bongo::context::with_timeout(value, 5min));
 
   std::optional<std::monostate> v;
   switch (bongo::select({
@@ -329,6 +336,6 @@ TEST_CASE("Child does not cancel parent", "[context]") {
   };
 
   check(bongo::context::background());
-  auto [ctx, cancel] = bongo::context::with_cancel(bongo::context::background());
+  auto ctx = std::get<0>(bongo::context::with_cancel(bongo::context::background()));
   check(ctx);
 }
