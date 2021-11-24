@@ -27,7 +27,7 @@ chan<std::monostate>* cancel_context::done() {
   return &done_;
 }
 
-std::exception_ptr cancel_context::err() {
+std::error_code cancel_context::err() {
   std::lock_guard lock{mutex_};
   return err_;
 }
@@ -37,12 +37,12 @@ std::any cancel_context::value(std::string_view k) {
 }
 
 void cancel_context::cancel() {
-  cancel(true, canceled);
+  cancel(true, error::canceled);
 }
 
-void cancel_context::cancel(bool remove, std::exception_ptr err) {
+void cancel_context::cancel(bool remove, std::error_code err) {
   std::unique_lock lock{mutex_};
-  if (err_ == nullptr) {
+  if (err_ == std::error_code{}) {
     err_ = err;
     for (auto* child : children_) {
       child->cancel(false, err);
@@ -78,7 +78,7 @@ chan<std::monostate>* value_context::done() {
   return parent_->done();
 }
 
-std::exception_ptr value_context::err() {
+std::error_code value_context::err() {
   return parent_->err();
 }
 
@@ -86,7 +86,7 @@ std::any value_context::value(std::string_view k) {
   return k == key_ ? value_ : parent_->value(k);
 }
 
-void value_context::cancel(bool remove, std::exception_ptr err) {
+void value_context::cancel(bool remove, std::error_code err) {
   parent_->cancel(remove, err);
 }
 

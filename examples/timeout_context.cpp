@@ -24,11 +24,7 @@ int main() try {
     std::cout << "overslept\n";
     break;
   case 1:
-    try {
-      std::rethrow_exception(ctx->err());
-    } catch (std::exception const& e) {
-      std::cout << e.what() << "\n";  // prints "context deadline exceeded"
-    }
+    std::cerr << ctx->err() << "\n";
     break;
   }
 

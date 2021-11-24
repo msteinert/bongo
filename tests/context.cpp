@@ -50,7 +50,7 @@ TEST_CASE("With cancel context", "[context]") {
 
   auto check1 = [](bongo::context::context& c) {
     REQUIRE(c.done() != nullptr);
-    REQUIRE(c.err() == nullptr);
+    REQUIRE(c.err() == std::error_code{});
     std::optional<std::monostate> v;
     switch (bongo::select({
       bongo::recv_select_case(c.done(), v),
@@ -76,7 +76,7 @@ TEST_CASE("With cancel context", "[context]") {
       FAIL_CHECK("done blocked");
       break;
     }
-    REQUIRE(c.err() == bongo::context::canceled);
+    REQUIRE(c.err() == bongo::context::error::canceled);
   };
 
   check1(*c1);
@@ -104,7 +104,7 @@ TEST_CASE("Timeout context", "[context]") {
   case 1:
     break;
   }
-  REQUIRE(c->err() == bongo::context::deadline_exceeded);
+  REQUIRE(c->err() == bongo::context::error::deadline_exceeded);
 }
 
 TEST_CASE("Wrapped timeout context", "[context]") {
@@ -126,7 +126,7 @@ TEST_CASE("Wrapped timeout context", "[context]") {
   case 1:
     break;
   }
-  REQUIRE(c2->err() == bongo::context::deadline_exceeded);
+  REQUIRE(c2->err() == bongo::context::error::deadline_exceeded);
 }
 
 TEST_CASE("Canceled timeout context", "[context]") {
@@ -142,7 +142,7 @@ TEST_CASE("Canceled timeout context", "[context]") {
   default:
     FAIL_CHECK("context blocked");
   }
-  REQUIRE(c->err() == bongo::context::canceled);
+  REQUIRE(c->err() == bongo::context::error::canceled);
 }
 
 TEST_CASE("Deadline context", "[context]") {
@@ -163,7 +163,7 @@ TEST_CASE("Deadline context", "[context]") {
   case 1:
     break;
   }
-  REQUIRE(c->err() == bongo::context::deadline_exceeded);
+  REQUIRE(c->err() == bongo::context::error::deadline_exceeded);
 }
 
 TEST_CASE("Wrapped deadline context", "[context]") {
@@ -186,7 +186,7 @@ TEST_CASE("Wrapped deadline context", "[context]") {
   case 1:
     break;
   }
-  REQUIRE(c2->err() == bongo::context::deadline_exceeded);  // NOLINT
+  REQUIRE(c2->err() == bongo::context::error::deadline_exceeded);  // NOLINT
 }
 
 TEST_CASE("Canceled deadline context", "[context]") {
@@ -203,7 +203,7 @@ TEST_CASE("Canceled deadline context", "[context]") {
   default:
     FAIL_CHECK("context blocked");
   }
-  REQUIRE(c->err() == bongo::context::canceled);
+  REQUIRE(c->err() == bongo::context::error::canceled);
 }
 
 TEST_CASE("Value context", "[context]") {
@@ -276,7 +276,7 @@ TEST_CASE("Parent cancels child", "[context]") {
     default:
       FAIL_CHECK("canceled context should not block");
     }
-    REQUIRE(c.err() == bongo::context::canceled);
+    REQUIRE(c.err() == bongo::context::error::canceled);
   };
   check(*parent);
   check(*child);
@@ -293,7 +293,7 @@ TEST_CASE("Parent cancels child", "[context]") {
   default:
     FAIL_CHECK("pre-canceled context should not block");
   }
-  REQUIRE(precanceled->err() == bongo::context::canceled);
+  REQUIRE(precanceled->err() == bongo::context::error::canceled);
 }
 
 TEST_CASE("Child does not cancel parent", "[context]") {
@@ -322,7 +322,7 @@ TEST_CASE("Child does not cancel parent", "[context]") {
     default:
       FAIL_CHECK("child should not block");
     }
-    REQUIRE(child->err() == bongo::context::canceled);
+    REQUIRE(child->err() == bongo::context::error::canceled);
     switch (bongo::select({
       bongo::recv_select_case(parent->done(), v),
       bongo::default_select_case(),
@@ -332,7 +332,7 @@ TEST_CASE("Child does not cancel parent", "[context]") {
     default:
       break;
     }
-    REQUIRE(parent->err() == nullptr);
+    REQUIRE(parent->err() == std::error_code{});
   };
 
   check(bongo::context::background());

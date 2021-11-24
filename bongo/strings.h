@@ -7,7 +7,6 @@
 #include <utility>
 
 #include <bongo/detail/bytealg.h>
-#include <bongo/error.h>
 
 namespace bongo::strings {
 
