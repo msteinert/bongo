@@ -1,4 +1,3 @@
-// Copyright Exegy, Inc.
 // Copyright The Go Authors.
 
 #pragma once
@@ -9,6 +8,7 @@
 #include <type_traits>
 #include <utility>
 
+#include <bongo/bongo.h>
 #include <bongo/strconv/error.h>
 #include <bongo/strconv/parser.h>
 #include <bongo/strconv/detail/atoi.h>
@@ -101,7 +101,7 @@ struct parser<T, InputIt, std::enable_if_t<
     if (apostrophes && !detail::apostrophe_ok(begin, end)) {
       return {0, error::syntax};
     }
-    return {static_cast<T>(n), std::error_code{}};
+    return {static_cast<T>(n), nil};
   }
 };
 
@@ -124,7 +124,7 @@ struct parser<T, InputIt, std::enable_if_t<
       it = std::next(it);
     }
     auto [un, err] = parser<std::make_unsigned_t<T>, InputIt>{}(it, end, base);
-    if (err != std::error_code{}) {
+    if (err != nil) {
       return {0, err};
     }
     if (!neg && un > std::numeric_limits<T>::max()) {
@@ -137,7 +137,7 @@ struct parser<T, InputIt, std::enable_if_t<
     if (neg) {
       n = -n;
     }
-    return {n, std::error_code{}};
+    return {n, nil};
   }
 };
 

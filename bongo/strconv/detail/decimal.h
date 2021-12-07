@@ -1,13 +1,12 @@
-// Copyright Exegy, Inc.
 // Copyright The Go Authors.
 
 #pragma once
 
 #include <array>
 #include <algorithm>
+#include <iterator>
 #include <string>
 
-#include <bongo/detail/system.h>
 #include <bongo/strconv/detail/float_info.h>
 #include <bongo/strconv/detail/left_cheat.h>
 
@@ -16,11 +15,12 @@ namespace bongo::strconv::detail {
 static constexpr long max_shift = (sizeof (long unsigned) * 8) - 4;
 static constexpr auto powtab = std::array<long, 9>{1, 3, 6, 9, 13, 16, 19, 23, 26};
 
-template <typename OutputIt>
-constexpr void digit_zero(OutputIt out, long n) {
+template <std::output_iterator<uint8_t> OutputIt>
+constexpr OutputIt digit_zero(OutputIt out, long n) {
   for (auto i = 0; i < n; ++i) {
     *out++ = '0';
   }
+  return out;
 }
 
 struct decimal {
@@ -51,7 +51,7 @@ struct decimal {
     trim();
   }
 
-  template <typename InputIt>
+  template <std::input_iterator InputIt>
   constexpr bool read_float(InputIt begin, InputIt end) noexcept {
     auto it = begin;
     neg = false;
@@ -139,8 +139,8 @@ struct decimal {
     return true;
   }
 
-  template <typename OutputIt>
-  constexpr void str(OutputIt out) const {
+  template <std::output_iterator<uint8_t> OutputIt>
+  constexpr OutputIt str(OutputIt out) const {
     auto n = 10 + nd;
     if (dp > 0) {
       n += dp;
@@ -153,16 +153,17 @@ struct decimal {
     } else if (dp <= 0) {
       *out++ = '0';
       *out++ = '.';
-      digit_zero(out, -dp);
-      std::copy(d.begin(), std::next(d.begin(), nd), out);
+      out = digit_zero(out, -dp);
+      out = std::copy(d.begin(), std::next(d.begin(), nd), out);
     } else if (dp < nd) {
-      std::copy(d.begin(), std::next(d.begin(), dp), out);
+      out = std::copy(d.begin(), std::next(d.begin(), dp), out);
       *out++ = '.';
-      std::copy(std::next(d.begin(), dp), std::next(d.begin(), nd), out);
+      out = std::copy(std::next(d.begin(), dp), std::next(d.begin(), nd), out);
     } else {
-      std::copy(d.begin(), std::next(d.begin(), nd), out);
-      digit_zero(out, dp-nd);
+      out = std::copy(d.begin(), std::next(d.begin(), nd), out);
+      out = digit_zero(out, dp-nd);
     }
+    return out;
   }
 
   std::string str() const {
@@ -379,7 +380,7 @@ struct decimal {
       shift(-n);
       exp += n;
     }
-    while (dp < 0 || dp == 0 && d[0] < '5') {
+    while (dp < 0 || (dp == 0 && d[0] < '5')) {
       long n = -dp >= static_cast<long>(powtab.size()) ? 27 : powtab[-dp];
       shift(n);
       exp -= n;

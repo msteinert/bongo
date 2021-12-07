@@ -1,4 +1,3 @@
-// Copyright Exegy, Inc.
 // Copyright The Go Authors.
 
 #pragma once
@@ -17,7 +16,7 @@
 #include <utility>
 #include <variant>
 
-#include <bongo/chan.h>
+#include <bongo/bongo.h>
 #include <bongo/context/error.h>
 #include <bongo/time.h>
 
@@ -36,7 +35,7 @@ struct context {
   // Public API
   virtual std::optional<std::chrono::system_clock::time_point> deadline() { return std::nullopt; }
   virtual chan<std::monostate>* done() { return nullptr; }
-  virtual std::error_code err() { return std::error_code{}; }
+  virtual std::error_code err() { return nil; }
   virtual std::any value(std::string_view) { return std::any{}; }
 
   // Implementation API
@@ -55,7 +54,7 @@ class cancel_context : public context {
   std::mutex mutex_;
   chan<std::monostate> done_;
   std::unordered_set<context*> children_;
-  std::error_code err_ = std::error_code{};
+  std::error_code err_ = nil;
 
  public:
   cancel_context(context_type parent);
@@ -125,11 +124,11 @@ context_type with_value(context_type parent, std::string value, std::any key);
  *
  * - https://golang.org/pkg/context/#WithTimeout
  */
-template <typename Clock = std::chrono::system_clock>
-cancelable_context with_timeout(context_type parent, typename Clock::duration dur) {
+template <time::Clock T = std::chrono::system_clock>
+cancelable_context with_timeout(context_type parent, typename T::duration dur) {
   auto ctx = std::make_shared<cancel_context>(std::move(parent));
   ctx->deadline(std::chrono::system_clock::now() + dur);
-  auto timer = std::make_shared<bongo::time::timer<Clock>>(
+  auto timer = std::make_shared<bongo::time::timer<T>>(
       dur, [ctx]() { ctx->cancel(true, error::deadline_exceeded); });
   return std::make_pair(ctx, [timer, ctx]() {
     timer->stop();
@@ -142,8 +141,8 @@ cancelable_context with_timeout(context_type parent, typename Clock::duration du
  *
  * - https://golang.org/pkg/context/#WithDeadline
  */
-template <typename Clock = std::chrono::system_clock>
-cancelable_context with_deadline(context_type parent, typename Clock::time_point tp) {
+template <time::Clock T = std::chrono::system_clock>
+cancelable_context with_deadline(context_type parent, typename T::time_point tp) {
   auto cur = parent->deadline();
   auto ctx = std::make_shared<cancel_context>(std::move(parent));
   if (cur && *cur < tp) {
@@ -151,13 +150,13 @@ cancelable_context with_deadline(context_type parent, typename Clock::time_point
     return std::make_pair(ctx, [ctx]() { ctx->cancel(); });
   }
   ctx->deadline(std::chrono::time_point_cast<std::chrono::system_clock::duration>(tp));
-  auto dur = tp - Clock::now();
-  if (dur <= typename Clock::duration{0}) {
+  auto dur = tp - T::now();
+  if (dur <= typename T::duration{0}) {
     // Deadline already passed
     ctx->cancel(true, error::deadline_exceeded);
     return std::make_pair(ctx, [ctx]() { ctx->cancel(false, error::canceled); });
   }
-  auto timer = std::make_shared<bongo::time::timer<Clock>>(
+  auto timer = std::make_shared<bongo::time::timer<T>>(
       dur, [ctx]() {
         ctx->cancel(true, error::deadline_exceeded);
       });

@@ -1,3 +1,8 @@
+/*
+ * The function `bongo::context::with_deadline` returns a cancelable context
+ * that is automatically canceled at the specified point in time.
+ */
+
 #include <chrono>
 #include <iostream>
 #include <optional>

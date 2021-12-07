@@ -1,4 +1,3 @@
-// Copyright Exegy, Inc.
 // Copyright The Go Authors.
 
 #pragma once
@@ -9,6 +8,7 @@
 #include <type_traits>
 #include <utility>
 
+#include <bongo/bongo.h>
 #include <bongo/math/bits.h>
 #include <bongo/strconv/detail/atof.h>
 #include <bongo/strconv/detail/decimal.h>
@@ -19,10 +19,10 @@
 
 namespace bongo::strconv {
 
-template <typename T, typename InputIt>
+template <typename T, std::input_iterator InputIt>
 constexpr std::tuple<T, InputIt, std::error_code> parse_float_prefix(InputIt begin, InputIt end) {
   if (auto [val, n, ok] = detail::special<T>(begin, end); ok) {
-    return {val, std::next(begin, n), std::error_code{}};
+    return {val, std::next(begin, n), nil};
   }
   auto [mantissa, exp, neg, trunc, hex, it, ok] = detail::read_float(begin, end);
   if (!ok) {
@@ -34,14 +34,14 @@ constexpr std::tuple<T, InputIt, std::error_code> parse_float_prefix(InputIt beg
   }
   if (!trunc) {
     if (auto [f, ok] = detail::atof_exact<T>(mantissa, exp, neg); ok) {
-      return {f, it, std::error_code{}};
+      return {f, it, nil};
     }
     if (auto [f, ok] = detail::eisel_lemire<T>(mantissa, exp, neg); ok) {
       if (!trunc) {
-        return {f, it, std::error_code{}};
+        return {f, it, nil};
       }
       if (auto [fup, ok] = detail::eisel_lemire<T>(mantissa+1, exp, neg); ok && f == fup) {
-        return {f, it, std::error_code{}};
+        return {f, it, nil};
       }
     }
   }
@@ -55,14 +55,14 @@ constexpr std::tuple<T, InputIt, std::error_code> parse_float_prefix(InputIt beg
   if (overflow) {
     return {f, it, error::range};
   }
-  return {f, it, std::error_code{}};
+  return {f, it, nil};
 }
 
-template <typename T, typename InputIt>
+template <typename T, std::input_iterator InputIt>
 struct parser<T, InputIt, std::enable_if_t<detail::is_supported_float_v<T>>> {
   constexpr std::pair<T, std::error_code> operator()(InputIt begin, InputIt end) {
     auto [f, it, err] = parse_float_prefix<T>(begin, end);
-    if (it != end && (err == std::error_code{} || err != error::syntax)) {
+    if (it != end && (err == nil || err != error::syntax)) {
       return {0, error::syntax};
     }
     return {f, err};

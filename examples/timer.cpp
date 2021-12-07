@@ -1,3 +1,14 @@
+/*
+ * The [Timer][] type from the [time][] package is implemented. This type was
+ * implemented in order to build the context classes. Timers operate by
+ * spawning a thread that waits on a condition variable. If the condition is
+ * notified (via `bongo::timer::stop()`) the timer is canceled, otherwise it
+ * times out.
+ *
+ * [Timer]: https://golang.org/pkg/time/#Timer
+ * [time]: https://golang.org/pkg/time/
+ */
+
 #include <chrono>
 #include <iostream>
 

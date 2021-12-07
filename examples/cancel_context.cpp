@@ -1,9 +1,17 @@
+/*
+ * The [context][] package is implemented. This includes four usable context
+ * patterns via the following factory functions. The following example shows
+ * how to use a cancel context to signal that a thread should exit.
+ *
+ * [context]: https://golang.org/pkg/context/
+ */
+
 #include <iostream>
 #include <memory>
 #include <thread>
 #include <utility>
 
-#include <bongo/chan.h>
+#include <bongo/bongo.h>
 #include <bongo/context.h>
 
 int main() try {

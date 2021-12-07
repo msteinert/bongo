@@ -1,10 +1,15 @@
+/*
+ * The function `bongo::context::with_timeout` returns a cancelable context
+ * that is automatically canceled after the specified duration.
+ */
+
 #include <chrono>
 #include <iostream>
 #include <optional>
 #include <variant>
 
+#include <bongo/bongo.h>
 #include <bongo/context.h>
-#include <bongo/time.h>
 
 using namespace std::chrono_literals;
 

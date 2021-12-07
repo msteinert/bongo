@@ -1,4 +1,3 @@
-// Copyright Exegy, Inc.
 // Copyright The Go Authors.
 
 #pragma once
@@ -15,7 +14,7 @@
 
 namespace bongo::strconv::detail {
 
-template <typename InputIt>
+template <std::input_iterator InputIt>
 long common_prefix_ignore_case(InputIt begin, InputIt end, std::string_view prefix) {
   auto n = std::distance(begin, end);
   if (n > static_cast<ssize_t>(prefix.size())) {
@@ -34,7 +33,7 @@ long common_prefix_ignore_case(InputIt begin, InputIt end, std::string_view pref
   return n;
 }
 
-template <typename T, typename InputIt>
+template <typename T, std::input_iterator InputIt>
 std::tuple<double, long, bool> special(InputIt begin, InputIt end) {
   if (std::distance(begin, end) == 0) {
     return {0, 0, false};
@@ -50,7 +49,7 @@ std::tuple<double, long, bool> special(InputIt begin, InputIt end) {
     }
     nsign = 1;
     begin = std::next(begin);
-    [[fallthrough]]  /* fallthrough */
+    [[fallthrough]];  /* fallthrough */
   case 'i':
   case 'I':
       n = common_prefix_ignore_case(begin, end, "infinity");
@@ -79,7 +78,7 @@ std::tuple<double, long, bool> special(InputIt begin, InputIt end) {
   return {0, 0, false};
 }
 
-template <typename InputIt>
+template <std::input_iterator InputIt>
 std::tuple<uint64_t, long, bool, bool, bool, InputIt, bool> read_float(InputIt begin, InputIt end) {
   auto it = begin;
   uint64_t mantissa = 0;

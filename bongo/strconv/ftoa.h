@@ -1,9 +1,9 @@
-// Copyright Exegy, Inc.
 // Copyright The Go Authors.
 
 #pragma once
 
 #include <algorithm>
+#include <iterator>
 #include <type_traits>
 
 #include <bongo/math.h>
@@ -15,10 +15,10 @@ namespace bongo::strconv {
 
 template <
   typename T,
-  typename OutputIt,
+  std::output_iterator<uint8_t> OutputIt,
   typename = std::enable_if_t<detail::is_supported_float_v<T>>
 >
-constexpr void format(T f, OutputIt out, char fmt = 'e', long prec = -1) {
+constexpr OutputIt format(T f, OutputIt out, char fmt = 'e', long prec = -1) {
   auto bits = math::float_bits(f);
   auto neg = bits>>(detail::float_info<T>::exponent_bits()+detail::float_info<T>::mantissa_bits()) != 0;
   auto exp = static_cast<long>(bits>>detail::float_info<T>::mantissa_bits()) & ((1lu<<detail::float_info<T>::exponent_bits()) - 1);
@@ -32,8 +32,7 @@ constexpr void format(T f, OutputIt out, char fmt = 'e', long prec = -1) {
     } else {
       s = "+Inf";
     }
-    std::copy(s.begin(), s.end(), out);
-    return;
+    return std::copy(s.begin(), s.end(), out);
   } else if (exp == 0) {
     ++exp;
   } else {
@@ -41,12 +40,10 @@ constexpr void format(T f, OutputIt out, char fmt = 'e', long prec = -1) {
   }
   exp += detail::float_info<T>::bias();
   if (fmt == 'b') {
-    detail::fmt_b<T>(out, neg, mant, exp);
-    return;
+    return detail::fmt_b<T>(out, neg, mant, exp);
   }
   if (fmt == 'x' || fmt == 'X') {
-    detail::fmt_x<T>(out, prec, fmt, neg, mant, exp);
-    return;
+    return detail::fmt_x<T>(out, prec, fmt, neg, mant, exp);
   }
   if (prec < 0) {
     // Use Ryu algorithm.
@@ -64,8 +61,7 @@ constexpr void format(T f, OutputIt out, char fmt = 'e', long prec = -1) {
       prec = d.nd;
       break;
     }
-    detail::format_decimal(out, true, neg, d, prec, fmt);
-    return;
+    return detail::format_decimal(out, true, neg, d, prec, fmt);
   } else if (fmt != 'f'){
     // Fixed number of digits.
     auto digits = prec;
@@ -88,8 +84,7 @@ constexpr void format(T f, OutputIt out, char fmt = 'e', long prec = -1) {
             static_cast<uint32_t>(mant),
             exp-static_cast<long>(detail::float_info<T>::mantissa_bits()),
             digits);
-        detail::format_decimal(out, false, neg, d, prec, fmt);
-        return;
+        return detail::format_decimal(out, false, neg, d, prec, fmt);
       }
     }
     if constexpr (std::is_same_v<double, std::remove_cv_t<T>>) {
@@ -97,12 +92,11 @@ constexpr void format(T f, OutputIt out, char fmt = 'e', long prec = -1) {
         auto d = detail::ryu_ftoa_fixed64(
             mant, exp-static_cast<long>(detail::float_info<T>::mantissa_bits()),
             digits);
-        detail::format_decimal(out, false, neg, d, prec, fmt);
-        return;
+        return detail::format_decimal(out, false, neg, d, prec, fmt);
       }
     }
   }
-  detail::big_ftoa<T>(out, prec, fmt, neg, mant, exp);
+  return detail::big_ftoa<T>(out, prec, fmt, neg, mant, exp);
 }
 
 }  // namespace bongo::strconv

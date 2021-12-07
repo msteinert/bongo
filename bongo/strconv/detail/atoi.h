@@ -1,4 +1,3 @@
-// Copyright Exegy, Inc.
 // Copyright The Go Authors.
 
 #pragma once
@@ -12,7 +11,7 @@ constexpr T lower(T c) {
   return c | ('x' - 'X');
 }
 
-template <typename InputIt>
+template <std::input_iterator InputIt>
 constexpr bool apostrophe_ok(InputIt begin, InputIt end) {
   if (begin == end) {
     return true;

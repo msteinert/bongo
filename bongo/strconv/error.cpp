@@ -1,4 +1,3 @@
-// Copyright Exegy, Inc.
 // Copyright The Go Authors.
 
 #include <system_error>
@@ -13,13 +12,13 @@ struct error_category : std::error_category {
   std::string message(int e) const {
     switch (static_cast<error>(e)) {
     case error::base:
-      return "strconv base error";
+      return "base error";
     case error::range:
-      return "strconv range error";
+      return "range error";
     case error::syntax:
-      return "strconv syntax error";
+      return "syntax error";
     default:
-      return "strconv unrecognized error";
+      return "unrecognized error";
     }
   }
 };

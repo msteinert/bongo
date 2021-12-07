@@ -1,17 +1,21 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.12)
 project(bongo
-  DESCRIPTION "C++ implementation of Golang interfaces"
+  DESCRIPTION "Go APIs ported to C++20"
   LANGUAGES CXX)
 
-option(ENABLE_CLANG_TIDY "Enable clang-tidy checks" OFF)
-option(ENABLE_COVERAGE "Enable code coverage reporting" OFF)
-option(ENABLE_ASAN "Enable the address sanitizer" OFF)
-option(ENABLE_TSAN "Enable the thread sanitizer" OFF)
-option(WITH_EXAMPLES "Build the example applications" ON)
+option(ENABLE_CLANG_TIDY "Enable clang-tidy checks"       OFF)
+option(ENABLE_COVERAGE   "Enable code coverage reporting" OFF)
+option(ENABLE_ASAN       "Enable the address sanitizer"   OFF)
+option(ENABLE_TSAN       "Enable the thread sanitizer"    OFF)
+option(WITH_EXAMPLES     "Build the example applications" ON)
 
-# Check for local cmake modules before ${CMAKE_ROOT}/Modules
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+  add_compile_options("-fdiagnostics-color")
+endif()
 
 # Configure clang-tidy
 if(ENABLE_CLANG_TIDY)
@@ -65,18 +69,10 @@ include(${CMAKE_BINARY_DIR}/conan_paths.cmake OPTIONAL)
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads)
+find_package(Catch2)
 
+include(CTest)
 add_subdirectory(bongo)
 if(WITH_EXAMPLES)
   add_subdirectory(examples)
-endif()
-
-# Configure testing
-include(CTest)
-
-if(BUILD_TESTING)
-  find_package(Catch2)
-  if(TARGET Catch2::Catch2)
-    add_subdirectory(tests)
-  endif()
 endif()

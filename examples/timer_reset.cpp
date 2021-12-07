@@ -1,3 +1,13 @@
+/*
+ * Timers may be reset, but only after they have been stopped or timed out and
+ * the channel is drained.
+ *
+ * One major difference between this implementation and the Go implementation
+ * is how `timer.AfterFunc()` is emulated. In the Go implementation the
+ * callback occurs in a separate goroutine. In this package the callback
+ * function is called in the timer thread.
+ */
+
 #include <chrono>
 #include <iostream>
 
@@ -17,7 +27,7 @@ int main() try {
   v << t.c();
   std::cout << "Timed out after "
             << std::chrono::duration_cast<std::chrono::milliseconds>(*v).count()
-            << " seconds.\n";
+            << " milliseconds.\n";
 
   return 0;
 } catch (std::exception const& e) {

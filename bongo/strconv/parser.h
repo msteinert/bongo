@@ -1,4 +1,3 @@
-// Copyright Exegy, Inc.
 // Copyright The Go Authors.
 
 #pragma once
@@ -13,7 +12,7 @@
 
 namespace bongo::strconv {
 
-template <typename T, typename InputIt, typename = void>
+template <typename T, std::input_iterator InputIt, typename = void>
 struct parser {
   constexpr std::pair<T, std::error_code> operator()(InputIt begin, InputIt end);
 };

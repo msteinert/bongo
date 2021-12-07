@@ -1,16 +1,16 @@
-// Copyright Exegy, Inc.
 // Copyright The Go Authors.
 
 #pragma once
 
 #include <algorithm>
+#include <iterator>
 #include <stdexcept>
 #include <string_view>
 #include <type_traits>
 #include <utility>
 
 #include <bongo/math/bits.h>
-#include <bongo/detail/system.h>
+#include <bongo/runtime/detail/system.h>
 
 namespace bongo::strconv::detail {
 
@@ -34,8 +34,8 @@ constexpr bool is_power_of_two(long i) {
 }
 
 /// Fast path for small base-10 integers.
-template <typename T, typename OutputIt>
-constexpr void format_small(T i, OutputIt out) noexcept {
+template <typename T, std::output_iterator<uint8_t> OutputIt>
+constexpr OutputIt format_small(T i, OutputIt out) noexcept {
   std::string_view::iterator begin, end;
   if (i < 10) {
     begin = std::next(std::begin(digits), i);
@@ -44,21 +44,21 @@ constexpr void format_small(T i, OutputIt out) noexcept {
     begin = std::next(std::begin(small_string), i*2);
     end = std::next(std::begin(small_string), i*2+2);
   }
-  std::copy(begin, end, out);
+  return std::copy(begin, end, out);
 }
 
 /// Compute the string representation of an integer in the given base.
-template <typename T, typename OutputIt>
-constexpr void format_bits(T v, OutputIt out, long base) {
+template <typename T, std::output_iterator<uint8_t> OutputIt>
+constexpr OutputIt format_bits(T v, OutputIt out, long base) {
   if (base < 2 || base > static_cast<long>(digits.size())) {
     throw std::logic_error{"strconv: illegal integer format base"};
   }
   char a[64 + 1];
   auto i = sizeof a;
-  auto neg = std::is_signed_v<T> && v < 0 ? true : false;
-  uint64_t u = neg ? -v : v;
+  auto neg = std::is_signed_v<T> && v < 0;
+  uint64_t u = neg ? -static_cast<int64_t>(v) : v;
   if (base == 10) {
-    if constexpr (bongo::detail::host_32bit) {
+    if constexpr (runtime::detail::host_32bit) {
       while (u >= 1e9) {
         auto q = u / 1e9;
         auto us = static_cast<long unsigned>(u - q*1e9);
@@ -108,7 +108,7 @@ constexpr void format_bits(T v, OutputIt out, long base) {
   if (neg) {
     a[--i] = '-';
   }
-  std::copy(std::next(std::begin(a), i), std::end(a), out);
+  return std::copy(std::next(std::begin(a), i), std::end(a), out);
 }
 
 }  // namespace bongo::strconv::detail

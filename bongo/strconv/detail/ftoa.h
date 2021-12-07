@@ -1,9 +1,9 @@
-// Copyright Exegy, Inc.
 // Copyright The Go Authors.
 
 #pragma once
 
 #include <algorithm>
+#include <iterator>
 #include <type_traits>
 
 #include <bongo/math/bits.h>
@@ -15,8 +15,8 @@
 namespace bongo::strconv::detail {
 
 // %e: -d.ddddde±dd
-template <typename OutputIt>
-constexpr void fmt_e(OutputIt out, bool neg, decimal const& d, long prec, char fmt) {
+template <std::output_iterator<uint8_t> OutputIt>
+constexpr OutputIt fmt_e(OutputIt out, bool neg, decimal const& d, long prec, char fmt) {
   // sign
   if (neg) {
     *out++ = '-';
@@ -35,7 +35,7 @@ constexpr void fmt_e(OutputIt out, bool neg, decimal const& d, long prec, char f
     auto i = 1;
     auto m = std::min(d.nd, prec+1);
     if (i < m) {
-      std::copy(std::next(d.d.begin(), i), std::next(d.d.begin(), m), out);
+      out = std::copy(std::next(d.d.begin(), i), std::next(d.d.begin(), m), out);
       i = m;
     }
     for (; i <= prec; ++i) {
@@ -69,11 +69,13 @@ constexpr void fmt_e(OutputIt out, bool neg, decimal const& d, long prec, char f
     *out++ = static_cast<char>(exp/10)%10+'0';
     *out++ = static_cast<char>(exp%10)+'0';
   }
+
+  return out;
 }
 
 // %f: -ddddddd.ddddd
-template <typename OutputIt>
-constexpr void fmt_f(OutputIt out, bool neg, decimal const& d, long prec) {
+template <std::output_iterator<uint8_t> OutputIt>
+constexpr OutputIt fmt_f(OutputIt out, bool neg, decimal const& d, long prec) {
   // sign
   if (neg) {
     *out++ = '-';
@@ -82,7 +84,7 @@ constexpr void fmt_f(OutputIt out, bool neg, decimal const& d, long prec) {
   // integer, padded with zeros as needed.
   if (d.dp > 0) {
     auto m = std::min(d.nd, d.dp);
-    std::copy(d.d.begin(), std::next(d.d.begin(), m), out);
+    out = std::copy(d.d.begin(), std::next(d.d.begin(), m), out);
     for (; m < d.dp; ++m) {
       *out++ = '0';
     }
@@ -101,18 +103,20 @@ constexpr void fmt_f(OutputIt out, bool neg, decimal const& d, long prec) {
       *out++ = ch;
     }
   }
+
+  return out;
 }
 
 // %b: -ddddddddp±ddd
-template <typename T, typename OutputIt>
-constexpr void fmt_b(OutputIt out, bool neg, uint64_t mant, long exp) {
+template <typename T, std::output_iterator<uint8_t> OutputIt>
+constexpr OutputIt fmt_b(OutputIt out, bool neg, uint64_t mant, long exp) {
   // sign
   if (neg) {
     *out++ = '-';
   }
 
   // mantissa
-  format_bits(mant, out, 10);
+  out = format_bits(mant, out, 10);
 
   // p
   *out++ = 'p';
@@ -122,12 +126,12 @@ constexpr void fmt_b(OutputIt out, bool neg, uint64_t mant, long exp) {
   if (exp >= 0) {
     *out++ = '+';
   }
-  format_bits(exp, out, 10);
+  return format_bits(exp, out, 10);
 }
 
 // %x: -0x1.yyyyyyyyp±ddd or -0x0p+0. (y is hex digit, d is decimal digit)
-template <typename T, typename OutputIt>
-constexpr void fmt_x(OutputIt out, long prec, char fmt, bool neg, uint64_t mant, long exp) {
+template <typename T, std::output_iterator<uint8_t> OutputIt>
+constexpr OutputIt fmt_x(OutputIt out, long prec, char fmt, bool neg, uint64_t mant, long exp) {
   if (mant == 0) {
     exp = 0;
   }
@@ -201,6 +205,8 @@ constexpr void fmt_x(OutputIt out, long prec, char fmt, bool neg, uint64_t mant,
     *out++ = static_cast<char>((exp%10)%10) + '0';
     *out++ = static_cast<char>(exp%10) + '0';
   }
+
+  return out;
 }
 
 template <typename T>
@@ -268,16 +274,14 @@ constexpr void round_shortest(decimal& d, uint64_t mant, long exp) {
   }
 }
 
-template <typename OutputIt>
-constexpr void format_decimal(OutputIt out, bool shortest, bool neg, decimal const& d, long prec, char fmt) {
+template <std::output_iterator<uint8_t> OutputIt>
+constexpr OutputIt format_decimal(OutputIt out, bool shortest, bool neg, decimal const& d, long prec, char fmt) {
   switch (fmt) {
   case 'e':
   case 'E':
-    fmt_e(out, neg, d, prec, fmt);
-    return;
+    return fmt_e(out, neg, d, prec, fmt);
   case 'f':
-    fmt_f(out, neg, d, prec);
-    return;
+    return fmt_f(out, neg, d, prec);
   case 'g':
   case 'G':
     auto eprec = prec;
@@ -292,22 +296,21 @@ constexpr void format_decimal(OutputIt out, bool shortest, bool neg, decimal con
       if (prec > d.nd) {
         prec = d.nd;
       }
-      fmt_e(out, neg, d, prec-1, fmt+'e'-'g');
-      return;
+      return fmt_e(out, neg, d, prec-1, fmt+'e'-'g');
     }
     if (prec > d.dp) {
       prec = d.nd;
     }
-    fmt_f(out, neg, d, std::max(prec-d.dp, static_cast<long>(0)));
-    return;
+    return fmt_f(out, neg, d, std::max(prec-d.dp, static_cast<long>(0)));
   }
   // unknown format
   *out++ = '%';
   *out++ = fmt;
+  return out;
 }
 
-template <typename T, typename OutputIt>
-constexpr void big_ftoa(OutputIt out, long prec, char fmt, bool neg, uint64_t mant, long exp) {
+template <typename T, std::output_iterator<uint8_t> OutputIt>
+constexpr OutputIt big_ftoa(OutputIt out, long prec, char fmt, bool neg, uint64_t mant, long exp) {
   auto d = detail::decimal{mant};
   d.shift(exp - static_cast<long>(float_info<T>::mantissa_bits()));
   auto shortest = prec < 0;
@@ -344,7 +347,7 @@ constexpr void big_ftoa(OutputIt out, long prec, char fmt, bool neg, uint64_t ma
       break;
     }
   }
-  format_decimal(out, shortest, neg, d, prec, fmt);
+  return format_decimal(out, shortest, neg, d, prec, fmt);
 }
 
 }  // namespace bongo::strconv::detail

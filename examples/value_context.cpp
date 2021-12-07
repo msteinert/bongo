@@ -1,3 +1,8 @@
+/*
+ * A value context associates a key with a value. Value context should only be
+ * used to store request-scoped data.
+ */
+
 #include <any>
 #include <iostream>
 #include <memory>

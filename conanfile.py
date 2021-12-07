@@ -23,13 +23,13 @@ class BongoConan(ConanFile):
     name = 'bongo'
     version = version()
     license = 'BSD 3-clause'
-    url = 'https://engrepo.exegy.net/exegy/bongo'
-    description = 'A port of some concurrency APIs from Go to C++'
+    url = 'https://github.com/msteinert/bongo'
+    description = 'Go APIs ported to C++'
     generators = 'cmake_find_package', 'cmake_paths'
     settings = 'os', 'compiler', 'build_type', 'arch'
     scm = {
         'type': 'git',
-        'url': 'https://engrepo.exegy.net/exegy/bongo.git',
+        'url': 'https://github.com/msteinert/bongo.git',
         'revision': 'auto',
     }
     options = {

@@ -1,4 +1,3 @@
-// Copyright Exegy, Inc.
 // Copyright The Go Authors.
 
 #include <exception>
@@ -9,6 +8,7 @@
 #include <utility>
 #include <variant>
 
+#include "bongo/bongo.h"
 #include "bongo/context.h"
 
 namespace bongo::context {
@@ -42,7 +42,7 @@ void cancel_context::cancel() {
 
 void cancel_context::cancel(bool remove, std::error_code err) {
   std::unique_lock lock{mutex_};
-  if (err_ == std::error_code{}) {
+  if (err_ == nil) {
     err_ = err;
     for (auto* child : children_) {
       child->cancel(false, err);

@@ -1,8 +1,17 @@
+/*
+ * A close approximation of [channels][] (and [select][]) is implemented along
+ * with most of the functional unit test suite. This example sends a message
+ * over an unbuffered channel from one thread to another.
+ *
+ * [channels]: https://tour.golang.org/concurrency/2
+ * [select]: https://tour.golang.org/concurrency/5
+ */
+
 #include <iostream>
 #include <string>
 #include <thread>
 
-#include <bongo/chan.h>
+#include <bongo/bongo.h>
 
 using namespace std::string_literals;
 

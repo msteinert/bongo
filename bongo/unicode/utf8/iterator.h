@@ -1,4 +1,3 @@
-// Copyright Exegy, Inc.
 // Copyright The Go Authors.
 
 #pragma once
@@ -6,8 +5,8 @@
 #include <iterator>
 #include <tuple>
 
-#include <bongo/rune.h>
-#include <bongo/unicode/utf8.h>
+#include <bongo/bongo.h>
+#include <bongo/unicode/utf8/utf8.h>
 
 namespace bongo::unicode::utf8 {
 

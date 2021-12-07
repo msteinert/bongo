@@ -1,8 +1,16 @@
+/*
+ * Select is implemented in a similar fashion as [Select][reflect.Select] found
+ * in the [reflect][] package.
+ *
+ * [reflect.Select]: https://golang.org/pkg/reflect/#Select
+ * [reflect]:  https://golang.org/pkg/reflect/
+ */
+
 #include <iostream>
 #include <string>
 #include <thread>
 
-#include <bongo/chan.h>
+#include <bongo/bongo.h>
 
 using namespace std::string_literals;
 

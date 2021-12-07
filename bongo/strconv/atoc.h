@@ -1,19 +1,20 @@
-// Copyright Exegy, Inc.
 // Copyright The Go Authors.
 
 #pragma once
 
 #include <complex>
+#include <iterator>
 #include <system_error>
 #include <utility>
 
+#include <bongo/bongo.h>
 #include <bongo/strconv/atof.h>
 #include <bongo/strconv/error.h>
 #include <bongo/strconv/parser.h>
 
 namespace bongo::strconv {
 
-template <typename T, typename InputIt>
+template <typename T, std::input_iterator InputIt>
 struct parser<std::complex<T>, InputIt> {
   constexpr std::pair<std::complex<T>, std::error_code> operator()(InputIt begin, InputIt end) {
     // Remove parentheses, if any.
@@ -22,11 +23,11 @@ struct parser<std::complex<T>, InputIt> {
       end = std::prev(end);
     }
 
-    auto pending = std::error_code{};  // possibly pending range error
+    std::error_code pending = nil;  // possibly pending range error
 
     // Read real part (possibly imaginery part if followed by 'i').
     auto [re, it, err] = parse_float_prefix<T>(begin, end);
-    if (err != std::error_code{}) {
+    if (err != nil) {
       if (err != error::range) {
         return {0, err};
       }
@@ -61,7 +62,7 @@ struct parser<std::complex<T>, InputIt> {
     // Read imaginary part.
     T im;
     std::tie(im, it, err) = parse_float_prefix<T>(it, end);
-    if (err != std::error_code{}) {
+    if (err != nil) {
       if (err != error::range) {
         return {0, err};
       }

@@ -1,4 +1,3 @@
-// Copyright Exegy, Inc.
 // Copyright The Go Authors.
 
 #pragma once
@@ -6,7 +5,6 @@
 #include <type_traits>
 #include <utility>
 
-#include <bongo/detail/system.h>
 #include <bongo/math/bits.h>
 #include <bongo/strconv/detail/decimal.h>
 #include <bongo/strconv/detail/float_info.h>
@@ -112,7 +110,7 @@ constexpr void ryu_digits32(decimal& d, uint32_t lower, uint32_t central, uint32
   if (trimmed > 0) {
     cup = cnext_digit > 5 ||
       (cnext_digit == 5 && !c0) ||
-      (cnext_digit == 5 && c0 && central&1 == 1);
+      (cnext_digit == 5 && c0 && (central&1) == 1);
   }
   if (central < upper && cup) {
     ++central;
