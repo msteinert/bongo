@@ -19,7 +19,7 @@ static constexpr std::array<std::string_view, 6> false_strings{"0", "f", "F", "f
 
 template <std::input_iterator InputIt>
 struct parser<bool, InputIt> {
-  constexpr std::pair<bool, std::error_code> operator()(InputIt begin, InputIt end) {
+  std::pair<bool, std::error_code> operator()(InputIt begin, InputIt end) {
     for (auto s : true_strings) {
       if (std::equal(begin, end, std::begin(s), std::end(s))) {
         return {true, nil};

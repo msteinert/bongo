@@ -3,16 +3,15 @@
 #pragma once
 
 #include <atomic>
+#include <semaphore>
 #include <stdexcept>
-
-#include <bongo/detail/semaphore.h>
 
 namespace bongo::detail::poll {
 
 class fd_mutex {
   std::atomic<uint64_t> state_ = 0;
-  semaphore<1>          rsema_;
-  semaphore<1>          wsema_;
+  std::binary_semaphore rsema_{0};
+  std::binary_semaphore wsema_{0};
 
  public:
   fd_mutex() = default;
@@ -94,7 +93,7 @@ inline bool fd_mutex::decref() {
 
 inline bool fd_mutex::rwlock(bool read) {
   uint64_t mutex_bit, mutex_wait, mutex_mask;
-  semaphore<1>* mutex_sema;
+  std::counting_semaphore<1>* mutex_sema;
   if (read) {
     mutex_bit = mutex_rlock;
     mutex_wait = mutex_rwait;
@@ -134,7 +133,7 @@ inline bool fd_mutex::rwlock(bool read) {
 
 inline bool fd_mutex::rwunlock(bool read) {
   uint64_t mutex_bit, mutex_wait, mutex_mask;
-  semaphore<1>* mutex_sema;
+  std::counting_semaphore<1>* mutex_sema;
   if (read) {
     mutex_bit = mutex_rlock;
     mutex_wait = mutex_rwait;

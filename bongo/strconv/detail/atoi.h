@@ -35,7 +35,7 @@ constexpr bool apostrophe_ok(InputIt begin, InputIt end) {
   }
   for (auto it = begin; it < end; ++it) {
     auto c = lower(*it);
-    if ('0' <= c && c <= '9' || hex && 'a' <= c && c <= 'f') {
+    if (('0' <= c && c <= '9') || (hex && 'a' <= c && c <= 'f')) {
       saw = '0';
       continue;
     }

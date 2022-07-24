@@ -138,7 +138,7 @@ constexpr OutputIt fmt_x(OutputIt out, long prec, char fmt, bool neg, uint64_t m
 
   // Shift digits so leading (if any) is at bit 1<<60;
   mant <<= 60 - float_info<T>::mantissa_bits();
-  while (mant != 0 && mant&(1llu<<60) == 0) {
+  while (mant != 0 && (mant&(1llu<<60)) == 0) {
     mant <<= 1;
     --exp;
   }
@@ -252,7 +252,7 @@ constexpr void round_shortest(decimal& d, uint64_t mant, long exp) {
     if (ui < upper.nd) {
       u = upper.d[ui];
     }
-    auto okdown = l != m || inclusive && li+1 == lower.nd;
+    auto okdown = l != m || (inclusive && li+1) == lower.nd;
     if (upperdelta == 0 && m+1 < u) {
       upperdelta = 2;
     } else if (upperdelta == 0 && m != u) {

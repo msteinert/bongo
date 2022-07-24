@@ -116,7 +116,8 @@ format_loop:
       ++it;
     }
     if (it > last_it) {
-      buf_.write_string(std::string_view{last_it, it});
+      std::string_view::size_type n = it - last_it;
+      buf_.write_string(std::string_view{last_it, n});
     }
     if (it == format.end()) {
       break;  // done!

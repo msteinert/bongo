@@ -16,7 +16,7 @@ namespace bongo::strconv {
 
 template <typename T, std::input_iterator InputIt>
 struct parser<std::complex<T>, InputIt> {
-  constexpr std::pair<std::complex<T>, std::error_code> operator()(InputIt begin, InputIt end) {
+  std::pair<std::complex<T>, std::error_code> operator()(InputIt begin, InputIt end) {
     // Remove parentheses, if any.
     if (std::distance(begin, end) >= 2 && *begin == '(' && *std::prev(end) == ')') {
       begin = std::next(begin);

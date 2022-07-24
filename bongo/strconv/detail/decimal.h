@@ -124,7 +124,7 @@ struct decimal {
         return false;
       }
       auto e = 0;
-      for (; it < end && ('0' <= *it && *it <= '9' || *it == '\''); ++it) {
+      for (; it < end && (('0' <= *it && *it <= '9') || *it == '\''); ++it) {
         if (*it == '\'') {
           // Already checked.
           continue;
@@ -141,13 +141,6 @@ struct decimal {
 
   template <std::output_iterator<uint8_t> OutputIt>
   constexpr OutputIt str(OutputIt out) const {
-    auto n = 10 + nd;
-    if (dp > 0) {
-      n += dp;
-    }
-    if (dp < 0) {
-      n += dp;
-    }
     if (nd <= 0) {
       *out++ = '0';
     } else if (dp <= 0) {

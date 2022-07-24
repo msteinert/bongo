@@ -193,7 +193,7 @@ std::tuple<uint64_t, long, bool, bool, bool, InputIt, bool> read_float(InputIt b
       return {mantissa, exp, neg, trunc, hex, it, false};
     }
     auto e = 0;
-    for (; it < end && ('0' <= *it && *it <= '9' || *it == '\''); it = std::next(it)) {
+    for (; it < end && (('0' <= *it && *it <= '9') || *it == '\''); it = std::next(it)) {
       if (*it == '\'') {
         apostrophes = true;
         continue;

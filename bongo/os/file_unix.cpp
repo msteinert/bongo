@@ -69,9 +69,8 @@ std::string_view basename(std::string_view name) {
   return name;
 }
 
-std::chrono::system_clock::time_point to_duration(struct ::timespec const& t) {
-  auto d = std::chrono::seconds{t.tv_sec} + std::chrono::nanoseconds{t.tv_nsec};
-  return std::chrono::system_clock::time_point{d};
+std::chrono::system_clock::time_point to_duration(time_t t) {
+  return std::chrono::system_clock::time_point{std::chrono::seconds{t}};
 }
 
 }  // namespace
@@ -115,7 +114,7 @@ std::pair<file_info, std::error_code> file::stat() {
   if ((s.st_mode&S_ISVTX) != 0) {
     mode |= mode_sticky;
   }
-  return {file_info{std::string{basename(name_)}, s.st_size, mode, to_duration(s.st_mtim)}, nil};
+  return {file_info{std::string{basename(name_)}, s.st_size, mode, to_duration(s.st_mtime)}, nil};
 }
 
 std::pair<file, std::error_code> make_file(uintptr_t fd, std::string&& name) {

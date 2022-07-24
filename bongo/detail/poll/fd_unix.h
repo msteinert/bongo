@@ -2,11 +2,11 @@
 
 #pragma once
 
+#include <semaphore>
 #include <string_view>
 #include <system_error>
 
 #include <bongo/detail/poll/fd_mutex.h>
-#include <bongo/detail/semaphore.h>
 #include <bongo/syscall.h>
 
 namespace bongo::detail::poll {
@@ -19,7 +19,7 @@ class fd {
   bool is_file_ = false;
 
   // Signaled when file is closed.
-  semaphore<1> csema_;
+  std::binary_semaphore csema_{0};
 
   // True if this file has been set to blocking mode.
   bool is_blocking_ = false;

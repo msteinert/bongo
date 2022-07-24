@@ -27,6 +27,10 @@ add_library(bongo STATIC
   strings/reader.cpp
   sync/wait_group.cpp)
 
+target_compile_definitions(bongo
+  PRIVATE
+    -D_FILE_OFFSET_BITS=64)
+
 target_compile_options(bongo
   PRIVATE
     -Wall

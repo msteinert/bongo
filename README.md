@@ -16,7 +16,6 @@ source][] and is therefore covered by the same copyright and 3-clause BSD
 
 - [API](#api)
 - [Development](#development)
-- [Versioning](#versioning)
 
 ## API
 
@@ -35,7 +34,7 @@ requires [Catch2][]. To build with gcc-10 and run the test suite:
 
 ```
 $ mkdir build && cd build
-$ CXX=gcc-10 cmake ..
+$ CXX=g++-10 cmake ..
 $ ninja
 $ ./bongo/bongo-test
 ```

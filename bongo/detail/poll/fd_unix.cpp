@@ -9,9 +9,11 @@
 #include "bongo/detail/poll/fd_mutex.h"
 #include "bongo/detail/poll/fd_unix.h"
 #include "bongo/detail/poll/hook_unix.h"
-#include "bongo/detail/semaphore.h"
-#include "bongo/runtime/netpoll_epoll.h"
 #include "bongo/syscall.h"
+
+#if defined(__linux__)
+#include "bongo/runtime/netpoll_epoll.h"
+#endif
 
 namespace bongo::detail::poll {
 namespace {

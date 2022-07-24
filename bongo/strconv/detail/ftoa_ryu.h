@@ -375,7 +375,7 @@ constexpr decimal ryu_ftoa_shortest(uint64_t mant, long exp) {
   }
   auto cup = false;
   if (dc0) {
-    cup = fracc > 1lu<<(extra-1) || (fracc == 1lu<<(extra-1) && dc&1 == 0);
+    cup = fracc > 1lu<<(extra-1) || (fracc == 1lu<<(extra-1) && (dc&1) == 0);
   } else {
     cup = fracc>>(extra-1) == 1;
   }

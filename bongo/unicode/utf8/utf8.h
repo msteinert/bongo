@@ -311,7 +311,7 @@ constexpr bool valid(InputIt begin, InputIt end) noexcept {
       | static_cast<uint64_t>(to_byte(begin, 5))
       | static_cast<uint64_t>(to_byte(begin, 6))
       | static_cast<uint64_t>(to_byte(begin, 7));
-    if (value&0x80808080 != 0) {
+    if ((value&0x80808080) != 0) {
       // Found a non ASCII byte (>= rune_self).
       break;
     }

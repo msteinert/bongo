@@ -25,49 +25,63 @@ To> constexpr bit_cast(const From& src) noexcept {
   return cast.to;
 }
 
-constexpr int trailing_zeros(uint32_t v) {
+constexpr auto trailing_zeros(unsigned v) -> int {
   if (v == 0) {
-    return sizeof (uint32_t) * CHAR_BIT;
+    return sizeof (unsigned) * CHAR_BIT;
+  }
+  return __builtin_ctz(v);
+}
+
+constexpr auto trailing_zeros(long unsigned v) -> int {
+  if (v == 0) {
+    return sizeof (long unsigned) * CHAR_BIT;
   }
   return __builtin_ctzl(v);
 }
 
-constexpr int trailing_zeros(uint64_t v) {
+constexpr auto trailing_zeros(long long unsigned v) -> int {
   if (v == 0) {
-    return sizeof (uint64_t) * CHAR_BIT;
+    return sizeof (long long unsigned) * CHAR_BIT;
   }
-  return __builtin_ctzl(v);
+  return __builtin_ctzll(v);
 }
 
-constexpr int leading_zeros(uint32_t v) {
+constexpr auto leading_zeros(unsigned v) -> int {
   if (v == 0) {
-    return sizeof (int32_t) * CHAR_BIT;
+    return sizeof (unsigned) * CHAR_BIT;
   }
   return __builtin_clz(v);
 }
 
-constexpr int leading_zeros(uint64_t v) {
+constexpr auto leading_zeros(long unsigned v) -> int {
   if (v == 0) {
-    return sizeof (uint32_t) * CHAR_BIT;
+    return sizeof (long unsigned) * CHAR_BIT;
   }
   return __builtin_clzl(v);
+}
+
+constexpr auto leading_zeros(long long unsigned v) -> int {
+  if (v == 0) {
+    return sizeof (long long unsigned) * CHAR_BIT;
+  }
+  return __builtin_clzll(v);
 }
 
 template <
   typename T,
   typename = std::enable_if_t<std::is_integral_v<T> && std::is_unsigned_v<T>>
 >
-constexpr int len(T v) {
+constexpr auto len(T v) -> int {
   return std::numeric_limits<T>::digits - leading_zeros(v);
 }
 
-constexpr std::pair<uint64_t, uint64_t> add64(uint64_t x, uint64_t y, uint64_t carry) {
+constexpr auto add64(uint64_t x, uint64_t y, uint64_t carry) -> std::pair<uint64_t, uint64_t> {
   auto sum = x + y + carry;
   auto carry_out = ((x & y) | ((x | y) & ~sum)) >> 63;
   return {sum, carry_out};
 }
 
-constexpr std::pair<uint64_t, uint64_t> mul64(uint64_t x, uint64_t y) {
+constexpr auto mul64(uint64_t x, uint64_t y) -> std::pair<uint64_t, uint64_t> {
   auto const mask32 = (1lu<<32) - 1;
   auto x0 = x & mask32;
   auto x1 = x >> 32;

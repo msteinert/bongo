@@ -25,7 +25,7 @@ inline std::pair<int, std::error_code> fcntl(int fd, int cmd, int arg) noexcept 
 }  // namespace detail
 
 inline std::pair<int, std::error_code> open(std::string const& path, int mode, uint32_t perm) noexcept {
-  auto r0 = ::openat(AT_FDCWD, path.c_str(), mode|O_LARGEFILE, perm);
+  auto r0 = ::openat(AT_FDCWD, path.c_str(), mode, perm);
   if (r0 == -1) {
     return {-1, std::error_code{errno, std::system_category()}};
   }

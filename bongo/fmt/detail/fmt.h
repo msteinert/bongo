@@ -302,7 +302,7 @@ auto fmt::format(T&& v, rune verb, int precision, bytes::buffer& out) -> void {
       --digits;
     }
 
-    buf.write(tail);
+    buf.write(tail.bytes());
     num = buf.bytes();
     if (num[1] == '-' || num[1] == '+') {
       num = num.subspan(1);
