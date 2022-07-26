@@ -44,6 +44,7 @@ class pipe_reader {
   std::shared_ptr<pipe> p_;
 
  public:
+  pipe_reader() = default;
   pipe_reader(std::shared_ptr<pipe> p)
       : p_{std::move(p)} {}
 
@@ -64,6 +65,7 @@ class pipe_writer {
   std::shared_ptr<pipe> p_;
 
  public:
+  pipe_writer() = default;
   pipe_writer(std::shared_ptr<pipe> p)
       : p_{std::move(p)} {}
 

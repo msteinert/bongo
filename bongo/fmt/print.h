@@ -56,7 +56,7 @@ auto fprint(T& w, Args&&... args) -> std::pair<int, std::error_code> {
 // standard out. Spaces are added between operands when neither is a string.
 // It returns the number of bytes written and any write error encountered.
 template <typename... Args>
-auto print(std::string_view format, Args&&... args) -> std::pair<int, std::error_code> {
+auto print(Args&&... args) -> std::pair<int, std::error_code> {
   return fprint(os::stdout, std::forward<Args>(args)...);
 }
 
@@ -89,7 +89,7 @@ auto fprintln(T& w, Args&&... args) -> std::pair<int, std::error_code> {
 // appended. It returns the number of bytes written and any write error
 // encountered.
 template <typename... Args>
-auto println(std::string_view format, Args&&... args) -> std::pair<int, std::error_code> {
+auto println(Args&&... args) -> std::pair<int, std::error_code> {
   return fprintln(os::stdout, std::forward<Args>(args)...);
 }
 

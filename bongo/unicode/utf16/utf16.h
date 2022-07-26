@@ -42,7 +42,7 @@ constexpr std::pair<rune, rune> encode(rune r) noexcept {
 template <std::input_iterator InputIt, std::output_iterator<uint16_t> OutputIt>
 constexpr OutputIt encode(InputIt begin, InputIt end, OutputIt out) {
   for (auto it = begin; it != end; ++it) {
-    if (0 <= *it && *it < surr1 || surr3 <= *it && *it < surr_self) {
+    if ((0 <= *it && *it < surr1) || (surr3 <= *it && *it < surr_self)) {
       // Normal rune
       *out++ = static_cast<uint16_t>(*it);
     } else if (surr_self <= *it && *it <= max_rune) {

@@ -47,7 +47,7 @@ concept Formatter = requires (T f, U state, rune verb) {
   { f.format(state, verb) };
 };
 
-template <Formatter<State> T, State U>
+template <typename T, typename U> requires Formatter<T, U>
 auto format(T& f, U& state, rune verb) -> void {
   f.format(state, verb);
 }

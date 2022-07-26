@@ -124,7 +124,7 @@ context_type with_value(context_type parent, std::string value, std::any key);
  *
  * - https://golang.org/pkg/context/#WithTimeout
  */
-template <time::Clock T = std::chrono::system_clock>
+template <typename T = std::chrono::system_clock> requires time::Clock<T>
 cancelable_context with_timeout(context_type parent, typename T::duration dur) {
   auto ctx = std::make_shared<cancel_context>(std::move(parent));
   ctx->deadline(std::chrono::system_clock::now() + dur);
@@ -141,7 +141,7 @@ cancelable_context with_timeout(context_type parent, typename T::duration dur) {
  *
  * - https://golang.org/pkg/context/#WithDeadline
  */
-template <time::Clock T = std::chrono::system_clock>
+template <typename T = std::chrono::system_clock> requires time::Clock<T>
 cancelable_context with_deadline(context_type parent, typename T::time_point tp) {
   auto cur = parent->deadline();
   auto ctx = std::make_shared<cancel_context>(std::move(parent));

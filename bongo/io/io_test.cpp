@@ -140,6 +140,10 @@ TEST_CASE("Copy N write_to", "[io]") {
 template <Writer T>
 struct no_read_from {
   T& t;
+
+  no_read_from(T& t_)
+      : t{t_} {}
+
   std::pair<int, std::error_code> write(std::span<uint8_t const> p) {
     return t.write(p);
   }

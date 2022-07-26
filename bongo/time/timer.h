@@ -17,7 +17,7 @@ namespace bongo::time {
  *
  * - https://golang.org/pkg/time/#Timer
  */
-template <Clock T = std::chrono::system_clock>
+template <typename T = std::chrono::system_clock> requires Clock<T>
 class timer {
  public:
   using chan_type = chan<typename T::duration>;

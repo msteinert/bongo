@@ -156,7 +156,7 @@ format_loop:
             fmt_.flags.plus = false;
           }
           visit_arg([this, c](auto& arg) {
-            print_arg(arg, unicode::utf8::to_rune(c));
+            this->print_arg(arg, unicode::utf8::to_rune(c));
           }, arg_num, args...);
           ++arg_num;
           ++it;
@@ -255,7 +255,7 @@ simple_format:
         fmt_.flags.plus = false;
       }
       visit_arg([this, verb](auto& arg) {
-        print_arg(arg, verb);
+        this->print_arg(arg, verb);
       }, arg_num, args...);
       ++arg_num;
     }
@@ -654,7 +654,7 @@ auto printer::do_format(T&& arg, rune verb) -> void {
           buf_.write_string(comma_space_string);
         }
         visit_at([this, verb](auto& arg) {
-          do_format(arg, verb);
+          this->do_format(arg, verb);
         }, arg, i);
       }
       buf_.write_byte('}');
@@ -665,7 +665,7 @@ auto printer::do_format(T&& arg, rune verb) -> void {
           buf_.write_byte(' ');
         }
         visit_at([this, verb](auto& arg) {
-          do_format(arg, verb);
+          this->do_format(arg, verb);
         }, arg, i);
       }
       buf_.write_byte(']');

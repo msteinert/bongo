@@ -76,7 +76,7 @@ std::tuple<rune, int, std::error_code> reader::read_rune() {
     return {0, 0, io::eof};
   }
   prev_rune_ = static_cast<int>(i_);
-  if (auto c = s_[i_]; c < unicode::utf8::rune_self) {
+  if (auto c = s_[i_]; static_cast<rune>(c) < unicode::utf8::rune_self) {
     ++i_;
     return {static_cast<rune>(c), 1, nil};
   }

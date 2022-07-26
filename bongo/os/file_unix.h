@@ -18,8 +18,8 @@ namespace bongo::os {
 class file {
   std::unique_ptr<detail::poll::fd> pfd_;
   std::string name_;
-  bool stdout_or_err_;
-  bool append_mode_;
+  [[maybe_unused]] bool stdout_or_err_;
+  [[maybe_unused]] bool append_mode_;
 
  public:
   file() = default;

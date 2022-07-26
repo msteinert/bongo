@@ -142,7 +142,7 @@ TEST_CASE("Byte reader zero", "[bytes]") {
   err = reader{}.unread_byte();
   CHECK(err != nil);
 
-  err == reader{}.unread_rune();
+  err = reader{}.unread_rune();
   CHECK(err != nil);
 }
 

@@ -13,7 +13,7 @@ std::pair<file, std::error_code> open(std::string&& name) {
 }
 
 std::pair<file, std::error_code> open(std::string const& name) {
-  return open(std::move(name));
+  return open(std::string{name});
 }
 
 std::pair<file, std::error_code> create(std::string&& name) {
@@ -21,7 +21,7 @@ std::pair<file, std::error_code> create(std::string&& name) {
 }
 
 std::pair<file, std::error_code> create(std::string const& name) {
-  return create(std::move(name));
+  return create(std::string{name});
 }
 
 std::pair<file, std::error_code> open_file(std::string&& name, int flag, file_mode perm) {
@@ -29,7 +29,7 @@ std::pair<file, std::error_code> open_file(std::string&& name, int flag, file_mo
 }
 
 std::pair<file, std::error_code> open_file(std::string const& name, int flag, file_mode perm) {
-  return open_file(std::move(name), flag, perm);
+  return open_file(std::string{name}, flag, perm);
 }
 
 }  // namespace bongo::os

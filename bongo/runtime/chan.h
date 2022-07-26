@@ -147,8 +147,8 @@ class chan : public detail::chan_impl {
     using pointer = T*;
     using reference = T&;
 
-    bool operator==(iterator const& other) { return value_ == other.value_; }
-    bool operator!=(iterator const& other) { return value_ != other.value_; }
+    bool operator==(iterator const& other) const { return value_ == other.value_; }
+    bool operator!=(iterator const& other) const { return value_ != other.value_; }
     reference operator*() { return *value_; }
     pointer operator->() { return &value_; }
 

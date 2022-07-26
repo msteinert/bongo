@@ -30,7 +30,9 @@ void check_write(T& w, std::span<uint8_t const> data, chan<pipe_return>& c) {
 
 TEST_CASE("Pipe: single read/write pair", "[io]") {
   auto c = chan<pipe_return>{};
-  auto [r, w] = make_pipe();
+  pipe_reader r;
+  pipe_writer w;
+  std::tie(r, w) = make_pipe();
   auto buf = std::vector<uint8_t>(64, 0);
   auto t = std::thread{[&]() {
     check_write(w, bytes::to_bytes(std::string_view{"hello, world"}), c);
@@ -65,7 +67,9 @@ void reader(T& r, chan<pipe_return>& c) {
 
 TEST_CASE("Pipe: sequence of read/write pairs", "[io]") {
   auto c = chan<pipe_return>{};
-  auto [r, w] = make_pipe();
+  pipe_reader r;
+  pipe_writer w;
+  std::tie(r, w) = make_pipe();
   auto t = std::thread{[&] {
     reader(r, c);
   }};
@@ -104,7 +108,9 @@ void writer(T& w, std::vector<uint8_t> buf, chan<pipe_return>& c) {
 
 TEST_CASE("Pipe: large write that requires multiple reads to satisfy", "[io]") {
   auto c = chan<pipe_return>{};
-  auto [r, w] = make_pipe();
+  pipe_reader r;
+  pipe_writer w;
+  std::tie(r, w) = make_pipe();
   auto wdat = std::vector<uint8_t>(128);
   for (size_t i = 0; i < wdat.size(); ++i) {
     wdat[i] = static_cast<uint8_t>(i);
@@ -178,7 +184,9 @@ TEST_CASE("Pipe: after close", "[io]") {
     for (auto& tt : test_cases) {
       std::thread t;
       auto c = chan<std::error_code>{1};
-      auto [r, w] = make_pipe();
+      pipe_reader r;
+      pipe_writer w;
+      std::tie(r, w) = make_pipe();
       if (tt.async) {
         t = std::thread{[&]() {
           delay_close(w, c, tt);
@@ -205,7 +213,9 @@ TEST_CASE("Pipe: after close", "[io]") {
     for (auto& tt : test_cases) {
       std::thread t;
       auto c = chan<std::error_code>{1};
-      auto [r, w] = make_pipe();
+      pipe_reader r;
+      pipe_writer w;
+      std::tie(r, w) = make_pipe();
       if (tt.async) {
         t = std::thread{[&]() {
           delay_close(r, c, tt);
@@ -231,7 +241,9 @@ TEST_CASE("Pipe: after close", "[io]") {
 
 TEST_CASE("Pipe: close on read side during read", "[io]") {
   auto c = chan<std::error_code>{1};
-  auto [r, _] = make_pipe();
+  pipe_reader r;
+  pipe_writer w;
+  std::tie(r, w) = make_pipe();
   auto tt = pipe_test{};
   auto t = std::thread{[&]() {
     delay_close(r, c, tt);
@@ -248,7 +260,9 @@ TEST_CASE("Pipe: close on read side during read", "[io]") {
 
 TEST_CASE("Pipe: close on write side during write", "[io]") {
   auto c = chan<std::error_code>{1};
-  auto [_, w] = make_pipe();
+  pipe_reader r;
+  pipe_writer w;
+  std::tie(r, w) = make_pipe();
   auto tt = pipe_test{};
   auto t = std::thread{[&]() {
     delay_close(w, c, tt);
@@ -264,7 +278,9 @@ TEST_CASE("Pipe: close on write side during write", "[io]") {
 }
 
 TEST_CASE("Pipe: write empty", "[io]") {
-  auto [r, w] = make_pipe();
+  pipe_reader r;
+  pipe_writer w;
+  std::tie(r, w) = make_pipe();
   auto t = std::thread{[&]() {
     w.write(std::span<uint8_t>{});
     w.close();
@@ -276,7 +292,9 @@ TEST_CASE("Pipe: write empty", "[io]") {
 }
 
 TEST_CASE("Pipe: write after writer close", "[io]") {
-  auto [r, w] = make_pipe();
+  pipe_reader r;
+  pipe_writer w;
+  std::tie(r, w) = make_pipe();
   auto done = chan<std::error_code>{};
   std::error_code write_err;
   auto t = std::thread{[&]() {
@@ -299,7 +317,9 @@ TEST_CASE("Pipe: close error", "[io]") {
   auto test_error1 = std::make_error_code(std::errc::not_a_stream);
   auto test_error2 = std::make_error_code(std::errc::not_a_socket);
 
-  auto [r, w] = make_pipe();
+  pipe_reader r;
+  pipe_writer w;
+  std::tie(r, w) = make_pipe();
   r.close_with_error(test_error1);
   auto [_, err] = w.write(nil);
   CHECK(err == test_error1);
@@ -333,7 +353,9 @@ TEST_CASE("Pipe: concurrent", "[io]") {
   SECTION("Write") {
     auto c = chan<pipe_return>{static_cast<size_t>(count)};
     auto threads = std::vector<std::thread>{};
-    auto [r, w] = make_pipe();
+    pipe_reader r;
+    pipe_writer w;
+    std::tie(r, w) = make_pipe();
     for (auto i = 0; i < count; ++i) {
       threads.push_back(std::thread{[&]() {
         std::this_thread::sleep_for(1ms);
@@ -362,7 +384,9 @@ TEST_CASE("Pipe: concurrent", "[io]") {
     };
     auto c = chan<result>{count*input.size()/read_size};
     auto threads = std::vector<std::thread>{};
-    auto [r, w] = make_pipe();
+    pipe_reader r;
+    pipe_writer w;
+    std::tie(r, w) = make_pipe();
     for (size_t i = 0; i < c.cap(); ++i) {
       threads.push_back(std::thread{[&]() {
         std::this_thread::sleep_for(1ms);

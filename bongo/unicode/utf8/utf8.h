@@ -130,21 +130,21 @@ constexpr OutputIt encode(rune r, OutputIt out) noexcept {
   if (i <= rune1_max) {
     *out++ = static_cast<uint8_t>(r);
   } else if (i <= rune2_max) {
-    *out++ = t2 | static_cast<uint8_t>(r>>6);
-    *out++ = tx | (static_cast<uint8_t>(r)&maskx);
+    *out++ = static_cast<uint8_t>(t2 | r>>6);
+    *out++ = static_cast<uint8_t>(tx | (r&maskx));
   } else if (i > max_rune || (surrogate_min <= i && i <= surrogate_max)) {
-    *out++ = t3 | static_cast<uint8_t>(rune_error>>12);
-    *out++ = tx | (static_cast<uint8_t>(rune_error>>6)&maskx);
-    *out++ = tx | (static_cast<uint8_t>(rune_error)&maskx);
+    *out++ = static_cast<uint8_t>(t3 | rune_error>>12);
+    *out++ = static_cast<uint8_t>(tx | ((rune_error>>6)&maskx));
+    *out++ = static_cast<uint8_t>(tx | (rune_error&maskx));
   } else if (i <= rune3_max) {
-    *out++ = t3 | static_cast<uint8_t>(r>>12);
-    *out++ = tx | (static_cast<uint8_t>(r>>6)&maskx);
-    *out++ = tx | (static_cast<uint8_t>(r)&maskx);
+    *out++ = static_cast<uint8_t>(t3 | r>>12);
+    *out++ = static_cast<uint8_t>(tx | ((r>>6)&maskx));
+    *out++ = static_cast<uint8_t>(tx | (r&maskx));
   } else {
-    *out++ = t4 | static_cast<uint8_t>(r>>18);
-    *out++ = tx | (static_cast<uint8_t>(r>>12)&maskx);
-    *out++ = tx | (static_cast<uint8_t>(r>>6)&maskx);
-    *out++ = tx | (static_cast<uint8_t>(r)&maskx);
+    *out++ = static_cast<uint8_t>(t4 | r>>18);
+    *out++ = static_cast<uint8_t>(tx | ((r>>12)&maskx));
+    *out++ = static_cast<uint8_t>(tx | ((r>>6)&maskx));
+    *out++ = static_cast<uint8_t>(tx | (r&maskx));
   }
   return out;
 }
