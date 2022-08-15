@@ -14,7 +14,7 @@ concept Stringer = requires (T s) {
   { s.str() } -> std::convertible_to<std::string_view>;
 };
 
-template <Stringer T>
+template <typename T> requires Stringer<T>
 auto to_string(T& v) {
   return v.str();
 }
@@ -31,7 +31,7 @@ concept BongoStringer = requires (T s) {
   { s.bongostr() } -> std::convertible_to<std::string_view>;
 };
 
-template <BongoStringer T>
+template <typename T> requires BongoStringer<T>
 auto to_bongo_string(T& v) {
   return v.bongostr();
 }

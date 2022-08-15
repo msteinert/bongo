@@ -10,14 +10,14 @@
 namespace bongo::runtime {
 
 struct nil_t {
-  constexpr bool operator==(nil_t const&) const noexcept { return true; }
-  constexpr bool operator==(nullptr_t const&) const noexcept { return true; }
-  bool operator==(std::error_code const& err) const noexcept { return err == std::error_code{}; }
-  bool operator==(std::string const& s) const noexcept { return s.size() == 0; }
-  constexpr bool operator==(std::string_view const& s) const noexcept { return s.size() == 0; }
+  constexpr auto operator==(nil_t const&) const noexcept -> bool { return true; }
+  constexpr auto operator==(nullptr_t const&) const noexcept -> bool { return true; }
+  auto operator==(std::error_code const& err) const noexcept -> bool { return err == std::error_code{}; }
+  auto operator==(std::string const& s) const noexcept { return s.size() == 0; }
+  constexpr auto operator==(std::string_view const& s) const noexcept -> bool { return s.size() == 0; }
 
   template <typename T>
-  constexpr bool operator==(std::span<T> const& s) const noexcept { return s.size() == 0; }
+  constexpr auto operator==(std::span<T> const& s) const noexcept -> bool { return s.size() == 0; }
 
   constexpr operator bool() const noexcept { return false; }
   constexpr operator void*() const noexcept { return nullptr; }
@@ -29,7 +29,7 @@ struct nil_t {
   constexpr operator std::span<T>() const noexcept { return std::span<T>{}; }
 
   template <typename T>
-  constexpr bool operator==(T const&) const noexcept { return false; }
+  constexpr auto operator==(T const&) const noexcept -> bool { return false; }
 };
 
 }  // namespace bongo::runtime
