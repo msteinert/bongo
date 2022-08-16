@@ -96,7 +96,7 @@ TEST_CASE("Pipe: sequence of read/write pairs", "[io]") {
 
 template <typename T>
 concept WriteCloser = requires {
-  Writer<T> && Closer<T>;
+  requires Writer<T> && Closer<T>;
 };
 
 template <WriteCloser T>

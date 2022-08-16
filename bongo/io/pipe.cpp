@@ -1,5 +1,6 @@
 // Copyright The Go Authors.
 
+#include <algorithm>
 #include <memory>
 #include <mutex>
 #include <optional>

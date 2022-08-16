@@ -1,5 +1,6 @@
 // Copyright The Go Authors.
 
+#include <limits>
 #include <string_view>
 #include <tuple>
 #include <vector>
@@ -11,6 +12,11 @@
 using namespace std::string_view_literals;
 
 namespace bongo::strings {
+
+constexpr static std::string_view abcd = "abcd";
+constexpr static std::string_view faces = "☺☻☹";
+constexpr static std::string_view commas = "1,2,3,4";
+constexpr static std::string_view dots = "1....2....3....4";
 
 TEST_CASE("Test index", "[strings]") {
   auto npos = std::string_view::npos;
@@ -113,6 +119,29 @@ TEST_CASE("Test index", "[strings]") {
   }
 }
 
+TEST_CASE("Test count", "[strings]") {
+  auto test_cases = std::vector<std::tuple<
+    std::string_view,
+    std::string_view,
+    int
+  >>{
+    {"", "", 1},
+    {"", "notempty", 0},
+    {"notempty", "", 9},
+    {"smaller", "not smaller", 0},
+    {"12345678987654321", "6", 2},
+    {"611161116", "6", 3},
+    {"notequal", "NotEqual", 0},
+    {"equal", "equal", 1},
+    {"abc1231231123q", "123", 3},
+    {"11111", "11", 2},
+  };
+  for (auto [s, substr, exp] : test_cases) {
+    CAPTURE(s, substr);
+    CHECK(count(s, substr) == exp);
+  }
+}
+
 TEST_CASE("Test contains", "[strings]") {
   auto test_cases = std::vector<std::tuple<
     std::string_view,
@@ -190,8 +219,8 @@ TEST_CASE("Test contains", "[strings]") {
   }
 }
 
-TEST_CASE("Repeat tests", "[strings]") {
-  auto test_cases = std::vector<std::tuple<std::string, std::string, int>>{
+TEST_CASE("Test repeat", "[strings]") {
+  auto test_cases = std::vector<std::tuple<std::string_view, std::string_view, int>>{
     {"", "", 0},
     {"", "", 1},
     {"", "", 2},
@@ -201,6 +230,78 @@ TEST_CASE("Repeat tests", "[strings]") {
   };
   for (auto const& [in, out, count] : test_cases) {
     CHECK(repeat(in, count) == out);
+  }
+}
+
+TEST_CASE("Test split", "[strings]") {
+  auto test_cases = std::vector<std::tuple<
+    std::string_view,
+    std::string_view,
+    int,
+    std::vector<std::string_view>
+  >>{
+    {"", "", -1, {}},
+    {abcd, "", 2, {"a", "bcd"}},
+    {abcd, "", 4, {"a", "b", "c", "d"}},
+    {abcd, "", -1, {"a", "b", "c", "d"}},
+    {faces, "", -1, {"☺", "☻", "☹"}},
+    {faces, "", 3, {"☺", "☻", "☹"}},
+    {faces, "", 17, {"☺", "☻", "☹"}},
+    {"☺�☹", "", -1, {"☺", "�", "☹"}},
+    {abcd, "a", 0, {}},
+    {abcd, "a", -1, {"", "bcd"}},
+    {abcd, "z", -1, {"abcd"}},
+    {commas, ",", -1, {"1", "2", "3", "4"}},
+    {dots, "...", -1, {"1", ".2", ".3", ".4"}},
+    {faces, "☹", -1, {"☺☻", ""}},
+    {faces, "~", -1, {faces}},
+    {"1 2 3 4", " ", 3, {"1", "2", "3 4"}},
+    {"1 2", " ", 3, {"1", "2"}},
+    {"", "T", std::numeric_limits<int>::max() / 4, {""}},
+    {"\xff-\xff", "", -1, {"\xff", "-", "\xff"}},
+    {"\xff-\xff", "-", -1, {"\xff", "\xff"}},
+  };
+  for (auto [s, sep, n, exp] : test_cases) {
+    auto v = split_n(s, sep, n);
+    CHECK(v == exp);
+    if (n == 0) {
+      continue;
+    }
+    CHECK(join(v, sep) == s);
+    if (n < 0) {
+      CHECK(split(s, sep) == v);
+    }
+  }
+}
+
+TEST_CASE("Test split_after", "[strings]") {
+  auto test_cases = std::vector<std::tuple<
+    std::string_view,
+    std::string_view,
+    int,
+    std::vector<std::string_view>
+  >>{
+    {abcd, "a", -1, {"a", "bcd"}},
+    {abcd, "z", -1, {"abcd"}},
+    {abcd, "", -1, {"a", "b", "c", "d"}},
+    {commas, ",", -1, {"1,", "2,", "3,", "4"}},
+    {dots, "...", -1, {"1...", ".2...", ".3...", ".4"}},
+    {faces, "☹", -1, {"☺☻☹", ""}},
+    {faces, "~", -1, {faces}},
+    {faces, "", -1, {"☺", "☻", "☹"}},
+    {"1 2 3 4", " ", 3, {"1 ", "2 ", "3 4"}},
+    {"1 2 3", " ", 3, {"1 ", "2 ", "3"}},
+    {"1 2", " ", 3, {"1 ", "2"}},
+    {"123", "", 2, {"1", "23"}},
+    {"123", "", 17, {"1", "2", "3"}},
+  };
+  for (auto [s, sep, n, exp] : test_cases) {
+    auto v = split_after_n(s, sep, n);
+    CHECK(v == exp);
+    CHECK(join(v, "") == s);
+    if (n < 0) {
+      CHECK(split_after(s, sep) == v);
+    }
   }
 }
 

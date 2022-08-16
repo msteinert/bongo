@@ -33,10 +33,7 @@ concept Flag = requires (T v, int c) {
 // State represents the printer state passed to custom formatters.
 template <typename T>
 concept State = requires {
-  io::Writer<T> &&
-  Width<T> &&
-  Precision<T> &&
-  Flag<T>;
+  requires io::Writer<T> && Width<T> && Precision<T> && Flag<T>;
 };
 
 // Formatter is implemented by any value that has a format method. The

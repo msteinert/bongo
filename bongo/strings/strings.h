@@ -13,7 +13,7 @@ namespace bongo::strings {
 
 // Returns the index of the first instance of substr in s, or
 // std::string_view::npos if substr is not present in s.
-constexpr std::string_view::size_type index(std::string_view s, std::string_view substr) {
+constexpr auto index(std::string_view s, std::string_view substr) -> std::string_view::size_type {
   if (substr.size() == 0) {
     return 0;
   } else if (substr.size() == 1) {
@@ -41,7 +41,7 @@ constexpr std::string_view::size_type index(std::string_view s, std::string_view
     ++i;
     ++fails;
     if (fails >= (4+i)>>4 && i < t) {
-      auto j = detail::bytealg::index_rabin_karp(s.substr(i), substr);
+      auto j = bongo::detail::bytealg::index_rabin_karp(s.substr(i), substr);
       if (j == std::string_view::npos) {
         return std::string_view::npos;
       }
@@ -53,13 +53,13 @@ constexpr std::string_view::size_type index(std::string_view s, std::string_view
 
 // Returns the index of the first instance of c in s, or std::string_view::npos
 // if c is not present is s.
-constexpr std::string_view::size_type index(std::string_view s, uint8_t c) {
+constexpr auto index(std::string_view s, uint8_t c) -> std::string_view::size_type {
   return s.find_first_of(c);
 }
 
 // Returns the index of the first instance of the Unicode code point r, or
 // std::string_view::npos if rune is not present in s.
-constexpr std::string_view::size_type index(std::string_view s, rune r) {
+constexpr auto index(std::string_view s, rune r) -> std::string_view::size_type {
   namespace utf8 = unicode::utf8;
   if (0 <= r && r < utf8::rune_self) {
     return index(s, static_cast<uint8_t>(r));
@@ -77,28 +77,50 @@ constexpr std::string_view::size_type index(std::string_view s, rune r) {
   }
 }
 
+// Counts the number of non-overlapping instances of substr in s. If substr is
+// an empty string, Count returns 1 + the number of Unicode code points in s.
+constexpr auto count(std::string_view s, std::string_view substr) -> int {
+  namespace utf8 = unicode::utf8;
+  if (substr.size() == 0) {
+    return utf8::count(std::begin(s), std::end(s)) + 1;
+  } else if (substr.size() == 1) {
+    int n = 0;
+    for (auto c : s) {
+      if (c == substr[0]) {
+        ++n;
+      }
+    }
+    return n;
+  }
+  int n = 0;
+  for (;;) {
+    auto i = index(s, substr);
+    if (i == std::string_view::npos) {
+      return n;
+    }
+    ++n;
+    s = s.substr(i+substr.size());
+  }
+}
+
 // Reports whether substr is within s.
-constexpr bool contains(std::string_view s, std::string_view substr) {
+template <typename T>
+constexpr auto contains(std::string_view s, T substr) -> bool {
   return index(s, substr) != std::string_view::npos;
 }
 
-// Reports whether the Unicode code point r is within s.
-constexpr bool contains(std::string_view s, rune r) {
-  return index(s, r) != std::string_view::npos;
-}
-
 // Tests whether the string s begins with prefix.
-constexpr bool has_prefix(std::string_view s, std::string_view prefix) {
+constexpr auto has_prefix(std::string_view s, std::string_view prefix) -> bool {
   return s.size() >= prefix.size() && s.substr(0, prefix.size()) == prefix;
 }
 
 // Tests whether the string s ends with suffix.
-constexpr bool has_suffix(std::string_view s, std::string_view suffix) {
+constexpr auto has_suffix(std::string_view s, std::string_view suffix) -> bool {
   return s.size() >= suffix.size() && s.substr(s.size()-suffix.size()) == suffix;
 }
 
 // Repeat returns a new string consisting of count copies of the string s.
-inline std::string repeat(std::string_view s, size_t count) {
+inline auto repeat(std::string_view s, size_t count) -> std::string {
   if (count == 0) {
     return "";
   }
