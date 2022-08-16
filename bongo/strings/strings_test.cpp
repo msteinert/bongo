@@ -305,6 +305,43 @@ TEST_CASE("Test split_after", "[strings]") {
   }
 }
 
+TEST_CASE("Test replace", "[strings]") {
+  auto test_cases = std::vector<std::tuple<
+    std::string_view,
+    std::string_view,
+    std::string_view,
+    int,
+    std::string_view
+  >>{
+    {"hello", "l", "L", 0, "hello"},
+    {"hello", "l", "L", -1, "heLLo"},
+    {"hello", "x", "X", -1, "hello"},
+    {"", "x", "X", -1, ""},
+    {"radar", "r", "<r>", -1, "<r>ada<r>"},
+    {"", "", "<>", -1, "<>"},
+    {"banana", "a", "<>", -1, "b<>n<>n<>"},
+    {"banana", "a", "<>", 1, "b<>nana"},
+    {"banana", "a", "<>", 1000, "b<>n<>n<>"},
+    {"banana", "an", "<>", -1, "b<><>a"},
+    {"banana", "ana", "<>", -1, "b<>na"},
+    {"banana", "", "<>", -1, "<>b<>a<>n<>a<>n<>a<>"},
+    {"banana", "", "<>", 10, "<>b<>a<>n<>a<>n<>a<>"},
+    {"banana", "", "<>", 6, "<>b<>a<>n<>a<>n<>a"},
+    {"banana", "", "<>", 5, "<>b<>a<>n<>a<>na"},
+    {"banana", "", "<>", 1, "<>banana"},
+    {"banana", "a", "a", -1, "banana"},
+    {"banana", "a", "a", 1, "banana"},
+    {"☺☻☹", "", "<>", -1, "<>☺<>☻<>☹<>"},
+  };
+  for (auto [s, old_s, new_s, n, exp] : test_cases) {
+    CAPTURE(s, old_s, new_s, n);
+    CHECK(replace(s, old_s, new_s, n) == exp);
+    if (n == -1) {
+      CHECK(replace(s, old_s, new_s) == exp);
+    }
+  }
+}
+
 TEST_CASE("Test cut", "[strings]") {
   auto test_cases = std::vector<std::tuple<
     std::string_view,
