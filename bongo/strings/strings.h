@@ -3,6 +3,7 @@
 #pragma once
 
 #include <string_view>
+#include <tuple>
 #include <utility>
 
 #include <bongo/detail/bytealg.h>
@@ -136,6 +137,13 @@ inline auto repeat(std::string_view s, size_t count) -> std::string {
     }
   }
   return std::string{b.str()};
+}
+
+constexpr auto cut(std::string_view s, std::string_view sep) -> std::tuple<std::string_view, std::string_view, bool> {
+  if (auto i = index(s, sep); i != std::string_view::npos) {
+    return {s.substr(0, i), s.substr(i+sep.size()), true};
+  }
+  return {s, "", false};
 }
 
 }  // namesapce bongo::strings

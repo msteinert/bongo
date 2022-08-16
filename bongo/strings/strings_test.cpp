@@ -305,4 +305,24 @@ TEST_CASE("Test split_after", "[strings]") {
   }
 }
 
+TEST_CASE("Test cut", "[strings]") {
+  auto test_cases = std::vector<std::tuple<
+    std::string_view,
+    std::string_view,
+    std::tuple<std::string_view, std::string_view, bool>
+  >>{
+    {"abc", "b", {"a", "c", true}},
+    {"abc", "a", {"", "bc", true}},
+    {"abc", "c", {"ab", "", true}},
+    {"abc", "abc", {"", "", true}},
+    {"abc", "", {"", "abc", true}},
+    {"abc", "d", {"abc", "", false}},
+    {"", "d", {"", "", false}},
+    {"", "", {"", "", true}},
+  };
+  for (auto [s, sep, exp] : test_cases) {
+    CHECK(cut(s, sep) == exp);
+  }
+}
+
 }  // namespace bongo::strings
