@@ -25,6 +25,7 @@ add_library(bongo STATIC
   strings/builder.cpp
   strings/error.cpp
   strings/reader.cpp
+  strings/strings.cpp
   sync/wait_group.cpp)
 
 target_compile_definitions(bongo

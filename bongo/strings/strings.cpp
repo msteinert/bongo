@@ -1,19 +1,11 @@
 // Copyright The Go Authors.
 
-#pragma once
-
-#include <iterator>
-#include <span>
+#include <string>
 #include <string_view>
-#include <utility>
-#include <vector>
 
 #include <bongo/strings/builder.h>
 #include <bongo/strings/strings.h>
 #include <bongo/unicode/utf8.h>
-
-#include <iostream>
-#include <bongo/fmt.h>
 
 namespace bongo::strings {
 namespace detail {
@@ -39,7 +31,7 @@ auto explode(InputIt it, InputIt end, int n) -> std::vector<std::string_view> {
   return a;
 }
 
-inline auto generic_split(std::string_view s, std::string_view sep, int sep_save, int n) -> std::vector<std::string_view> {
+auto generic_split(std::string_view s, std::string_view sep, int sep_save, int n) -> std::vector<std::string_view> {
   if (n == 0) {
     return {};
   }
@@ -71,23 +63,23 @@ inline auto generic_split(std::string_view s, std::string_view sep, int sep_save
 
 }  // namespace detail
 
-inline auto split_n(std::string_view s, std::string_view sep, int n) -> std::vector<std::string_view> {
+auto split(std::string_view s, std::string_view sep, int n) -> std::vector<std::string_view> {
   return detail::generic_split(s, sep, 0, n);
 }
 
-inline auto split_after_n(std::string_view s, std::string_view sep, int n) -> std::vector<std::string_view> {
+auto split_after(std::string_view s, std::string_view sep, int n) -> std::vector<std::string_view> {
   return detail::generic_split(s, sep, sep.size(), n);
 }
 
-inline auto split(std::string_view s, std::string_view sep) -> std::vector<std::string_view> {
+auto split(std::string_view s, std::string_view sep) -> std::vector<std::string_view> {
   return detail::generic_split(s, sep, 0, -1);
 }
 
-inline auto split_after(std::string_view s, std::string_view sep) -> std::vector<std::string_view> {
+auto split_after(std::string_view s, std::string_view sep) -> std::vector<std::string_view> {
   return detail::generic_split(s, sep, sep.size(), -1);
 }
 
-inline auto join(std::span<std::string_view> e, std::string_view sep) -> std::string {
+auto join(std::span<std::string_view> e, std::string_view sep) -> std::string {
   switch (e.size()) {
   case 0:
     return "";
@@ -107,6 +99,59 @@ inline auto join(std::span<std::string_view> e, std::string_view sep) -> std::st
     b.write_string(*it);
   }
   return std::string{b.str()};
+}
+
+auto repeat(std::string_view s, size_t count) -> std::string {
+  if (count == 0) {
+    return "";
+  }
+  auto n = s.size() * count;
+  auto b = strings::builder{};
+  b.grow(n);
+  b.write_string(s);
+  while (b.size() < n) {
+    if (b.size() <= n/2) {
+      b.write(b.bytes());
+    } else {
+      b.write(b.bytes().subspan(0, n-b.size()));
+    }
+  }
+  return std::string{b.str()};
+}
+
+auto replace(std::string_view s, std::string_view old_s, std::string_view new_s, int n) -> std::string {
+  namespace utf8 = unicode::utf8;
+  if (old_s == new_s || n == 0) {
+    return std::string{s};
+  }
+  if (auto m = count(s, old_s); m == 0) {
+    return std::string{s};
+  } else if (n < 0 || m < n) {
+    n = m;
+  }
+  auto b = builder{};
+  b.grow(s.size() + n*(new_s.size()-old_s.size()));
+  auto start = 0;
+  for (auto i = 0; i < n; ++i) {
+    auto j = start;
+    if (old_s.size() == 0) {
+      if (i > 0) {
+        auto [_, wid] = utf8::decode(s.substr(start));
+        j += wid;
+      }
+    } else {
+      j += index(s.substr(start), old_s);
+    }
+    b.write_string(s.substr(start, j-start));
+    b.write_string(new_s);
+    start = j + old_s.size();
+  }
+  b.write_string(s.substr(start));
+  return std::string{b.str()};
+}
+
+auto replace(std::string_view s, std::string_view old_s, std::string_view new_s) -> std::string {
+  return replace(s, old_s, new_s, -1);
 }
 
 }  // namesapce bongo::strings

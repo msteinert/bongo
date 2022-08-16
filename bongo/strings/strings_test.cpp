@@ -262,7 +262,7 @@ TEST_CASE("Test split", "[strings]") {
     {"\xff-\xff", "-", -1, {"\xff", "\xff"}},
   };
   for (auto [s, sep, n, exp] : test_cases) {
-    auto v = split_n(s, sep, n);
+    auto v = split(s, sep, n);
     CHECK(v == exp);
     if (n == 0) {
       continue;
@@ -296,7 +296,7 @@ TEST_CASE("Test split_after", "[strings]") {
     {"123", "", 17, {"1", "2", "3"}},
   };
   for (auto [s, sep, n, exp] : test_cases) {
-    auto v = split_after_n(s, sep, n);
+    auto v = split_after(s, sep, n);
     CHECK(v == exp);
     CHECK(join(v, "") == s);
     if (n < 0) {
