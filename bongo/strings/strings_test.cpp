@@ -8,6 +8,7 @@
 #include <catch2/catch.hpp>
 
 #include "bongo/strings.h"
+#include "bongo/unicode.h"
 
 using namespace std::string_view_literals;
 
@@ -386,6 +387,28 @@ TEST_CASE("Test split_after", "[strings]") {
   }
 }
 
+TEST_CASE("Test to_valid_utf8", "[strings]") {
+  auto test_cases = std::vector<std::tuple<
+    std::string_view,
+    std::string_view,
+    std::string_view
+  >>{
+    {"", "\uFFFD", ""},
+    {"abc", "\uFFFD", "abc"},
+    {"\uFDDD", "\uFFFD", "\uFDDD"},
+    {"\xC0\xAF", "\uFFFD", "\uFFFD"},
+    {"\xE0\x80\xAF", "\uFFFD", "\uFFFD"},
+    {"\xed\xa0\x80", "abc", "abc"},
+    {"\xed\xbf\xbf", "\uFFFD", "\uFFFD"},
+    {"\xF0\x80\x80\xaf", "☺", "☺"},
+    {"\xF8\x80\x80\x80\xAF", "\uFFFD", "\uFFFD"},
+    {"\xFC\x80\x80\x80\x80\xAF", "\uFFFD", "\uFFFD"},
+  };
+  for (auto [s, replacement, exp] : test_cases) {
+    CHECK(to_valid_utf8(s, replacement) == exp);
+  }
+}
+
 TEST_CASE("Test replace", "[strings]") {
   auto test_cases = std::vector<std::tuple<
     std::string_view,
@@ -421,6 +444,79 @@ TEST_CASE("Test replace", "[strings]") {
       CHECK(replace(s, old_s, new_s) == exp);
     }
   }
+}
+
+static auto ten_runes(rune ch) -> std::string {
+  namespace utf8 = unicode::utf8;
+  auto b = builder{};
+  b.grow(10 * utf8::len(ch));
+  for (auto i = 0; i < 10; ++i) {
+    b.write_rune(ch);
+  }
+  return std::string{b.str()};
+}
+
+static auto rot13(rune r) -> rune {
+  auto step = static_cast<rune>(13);
+  if (r >= 'a' && r <= 'z') {
+    return ((r - 'a' + step) % 26) + 'a';
+  }
+  if (r >= 'A' && r <= 'Z') {
+    return ((r - 'A' + step) % 26) + 'A';
+  }
+  return r;
+}
+
+template <typename... Runes>
+std::string make_string(Runes... r) {
+  auto b = builder{};
+  b.grow(sizeof...(Runes) * sizeof (rune));
+  (b.write_rune(r), ...);
+  return std::string{b.str()};
+}
+
+TEST_CASE("Test map", "[strings]") {
+  namespace utf8 = unicode::utf8;
+  auto a = ten_runes('a');
+
+  // 1. Grow
+  CHECK(map([](rune) { return utf8::max_rune; }, a) == ten_runes(utf8::max_rune));
+
+  // 2. Shrink
+  CHECK(map([](rune) { return static_cast<rune>('a'); }, ten_runes(utf8::max_rune)) == a);
+
+  // 3. Rot13
+  CHECK(map(&rot13, "a to zed") == "n gb mrq");
+
+  // 4. Rot13^2
+  CHECK(map(&rot13, map(&rot13, "a to zed")) == "a to zed");
+
+  // 6. Identity
+  CHECK(map([](rune r) { return r; }, "Input string") == "Input string");
+
+  // 8. Check utf8::rune_self and utf8::rune_max encoding
+  auto encode = [](rune r) {
+    switch (r) {
+    case utf8::rune_self:
+      return unicode::max_rune;
+    case unicode::max_rune:
+      return utf8::rune_self;
+    }
+    return r;
+  };
+  auto s = make_string(utf8::rune_self, utf8::max_rune);
+  auto r = make_string(utf8::max_rune, utf8::rune_self);
+  CHECK(map(encode, s) == r);
+  CHECK(map(encode, r) == s);
+
+  // 9. Check mapping occurs in the front, middle, and back
+  auto trim_spaces = [](rune r) {
+    if (std::isspace(r)) {
+      return -1;
+    }
+    return r;
+  };
+  CHECK(map(trim_spaces, "   abc    ABC   ") == "abcABC");
 }
 
 TEST_CASE("Test cut", "[strings]") {

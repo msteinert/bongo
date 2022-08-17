@@ -12,8 +12,6 @@
 #include <bongo/strings/detail/ascii_set.h>
 #include <bongo/unicode/utf8.h>
 
-#include <iostream>
-
 namespace bongo::strings {
 
 // Returns the index of the first instance of substr in s, or
@@ -59,6 +57,16 @@ constexpr auto has_prefix(std::string_view s, std::string_view prefix) -> bool;
 
 // Tests whether the string s ends with suffix.
 constexpr auto has_suffix(std::string_view s, std::string_view suffix) -> bool;
+
+template <typename T>
+concept MapFunction = requires (T func, rune r) {
+  { func(r) } -> std::same_as<rune>;
+};
+
+template <MapFunction T>
+auto map(T&& mapping, std::string_view s) -> std::string;
+
+auto to_valid_utf8(std::string_view s, std::string_view replacement) -> std::string;
 
 // Repeat returns a new string consisting of count copies of the string s.
 auto repeat(std::string_view s, size_t count) -> std::string;
@@ -280,6 +288,56 @@ constexpr auto has_prefix(std::string_view s, std::string_view prefix) -> bool {
 
 constexpr auto has_suffix(std::string_view s, std::string_view suffix) -> bool {
   return s.size() >= suffix.size() && s.substr(s.size()-suffix.size()) == suffix;
+}
+
+template <MapFunction T>
+auto map(T&& mapping, std::string_view s) -> std::string {
+  namespace utf8 = unicode::utf8;
+  auto b = builder{};
+
+  for (auto [i, c] : utf8::range{s}) {
+    auto r = mapping(c);
+    if (r == c && c != utf8::rune_error) {
+      continue;
+    }
+
+    int width = 0;
+    if (c == utf8::rune_error) {
+      std::tie(c, width) = utf8::decode(s.substr(i));
+      if (width != 1 && r == c) {
+        continue;
+      }
+    } else {
+      width = utf8::len(c);
+    }
+
+    b.grow(s.size() + utf8::utf_max);
+    b.write_string(s.substr(0, i));
+    if (r >= 0) {
+      b.write_rune(r);
+    }
+
+    s = s.substr(i+width);
+    break;
+  }
+
+  if (b.capacity() == 0) {
+    return std::string{s};
+  }
+
+  for (auto [_, c] : utf8::range{s}) {
+    auto r = mapping(c);
+
+    if (r >= 0) {
+      if (r < utf8::rune_self) {
+        b.write_byte(static_cast<uint8_t>(r));
+      } else {
+        b.write_rune(r);
+      }
+    }
+  }
+
+  return std::string{b.str()};
 }
 
 constexpr auto cut(std::string_view s, std::string_view sep) -> std::tuple<std::string_view, std::string_view, bool> {

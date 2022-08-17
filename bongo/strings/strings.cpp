@@ -101,6 +101,54 @@ auto join(std::span<std::string_view> e, std::string_view sep) -> std::string {
   return std::string{b.str()};
 }
 
+auto to_valid_utf8(std::string_view s, std::string_view replacement) -> std::string {
+  namespace utf8 = unicode::utf8;
+  auto b = builder{};
+
+  for (auto [i, c] : utf8::range{s}) {
+    if (c != utf8::rune_error) {
+      continue;
+    }
+
+    auto [_, wid] = utf8::decode(s.substr(i));
+    if (wid == 1) {
+      b.grow(s.size() + replacement.size());
+      b.write_string(s.substr(0, i));
+      s = s.substr(i);
+      break;
+    }
+  }
+
+  if (b.capacity() == 0) {
+    return std::string{s};
+  }
+
+  auto invalid = false;
+  for (std::string_view::size_type i = 0; i < s.size();) {
+    auto c = static_cast<uint8_t>(s[i]);
+    if (c < utf8::rune_self) {
+      ++i;
+      invalid = false;
+      b.write_byte(c);
+      continue;
+    }
+    auto [_, wid] = utf8::decode(s.substr(i));
+    if (wid == 1) {
+      ++i;
+      if (!invalid) {
+        invalid = true;
+        b.write_string(replacement);
+      }
+      continue;
+    }
+    invalid = false;
+    b.write_string(s.substr(i, wid));
+    i += wid;
+  }
+
+  return std::string{b.str()};
+}
+
 auto repeat(std::string_view s, size_t count) -> std::string {
   if (count == 0) {
     return "";
