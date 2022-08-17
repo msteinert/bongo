@@ -25,6 +25,10 @@ constexpr auto index(std::string_view s, uint8_t c) -> std::string_view::size_ty
 // std::string_view::npos if rune is not present in s.
 constexpr auto index(std::string_view s, rune r) -> std::string_view::size_type;
 
+constexpr auto last_index(std::string_view s, std::string_view substr) -> std::string_view::size_type;
+
+constexpr auto last_index(std::string_view s, uint8_t c) -> std::string_view::size_type;
+
 auto split(std::string_view s, std::string_view sep, int n) -> std::vector<std::string_view>;
 
 auto split_after(std::string_view s, std::string_view sep, int n) -> std::vector<std::string_view>;
@@ -116,6 +120,43 @@ constexpr auto index(std::string_view s, rune r) -> std::string_view::size_type 
   } else {
     return index(s, utf8::encode(r));
   }
+}
+
+constexpr auto last_index(std::string_view s, std::string_view substr) -> std::string_view::size_type {
+  if (substr.size() == 0) {
+    return s.size();
+  } else if (substr.size() == 1) {
+    return s.find_last_of(substr.front());
+  } else if (substr.size() == s.size()) {
+    if (substr == s) {
+      return 0;
+    }
+    return std::string_view::npos;
+  } else if (substr.size() > s.size()) {
+    return std::string_view::npos;
+  }
+  auto [hashss, pow] = bongo::detail::bytealg::hash_reverse(substr);
+  auto last = s.size() - substr.size();
+  uint32_t h = 0;
+  for (auto i = s.size() - 1; i >= last; --i) {
+    h = h*bongo::detail::bytealg::prime_rk + static_cast<uint32_t>(s[i]);
+  }
+  if (h == hashss && s.substr(last) == substr) {
+    return last;
+  }
+  for (auto i = static_cast<int>(last) - 1; i >= 0; --i) {
+    h *= bongo::detail::bytealg::prime_rk;
+    h += static_cast<uint32_t>(s[i]);
+    h -= pow * static_cast<uint32_t>(s[i+substr.size()]);
+    if (h == hashss && s.substr(i, substr.size()) == substr) {
+      return i;
+    }
+  }
+  return std::string_view::npos;
+}
+
+constexpr auto last_index(std::string_view s, uint8_t c) -> std::string_view::size_type {
+  return s.find_last_of(c);
 }
 
 constexpr auto count(std::string_view s, std::string_view substr) -> int {

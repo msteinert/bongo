@@ -119,6 +119,33 @@ TEST_CASE("Test index", "[strings]") {
   }
 }
 
+TEST_CASE("Test last_index", "[strings]") {
+  auto npos = std::string_view::npos;
+  auto test_cases = std::vector<std::tuple<
+    std::string_view,
+    std::string_view,
+    std::string_view::size_type
+  >>{
+    {"", "", 0},
+    {"", "a", npos},
+    {"", "foo", npos},
+    {"fo", "foo", npos},
+    {"foo", "foo", 0},
+    {"foo", "f", 0},
+    {"oofofoofooo", "f", 7},
+    {"oofofoofooo", "foo", 7},
+    {"barfoobarfoo", "foo", 9},
+    {"foo", "", 3},
+    {"foo", "o", 2},
+    {"abcABCabc", "A", 3},
+    {"abcABCabc", "a", 6},
+  };
+  for (auto [s, substr, exp] : test_cases) {
+    CAPTURE(s, substr);
+    CHECK(last_index(s, substr) == exp);
+  }
+}
+
 TEST_CASE("Test count", "[strings]") {
   auto test_cases = std::vector<std::tuple<
     std::string_view,
