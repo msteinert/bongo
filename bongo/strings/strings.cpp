@@ -35,7 +35,7 @@ auto generic_split(std::string_view s, std::string_view sep, int sep_save, int n
   if (n == 0) {
     return {};
   }
-  if (sep == "") {
+  if (sep.empty()) {
     return explode(std::begin(s), std::end(s), n);
   }
   if (n < 0) {

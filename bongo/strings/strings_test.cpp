@@ -119,6 +119,33 @@ TEST_CASE("Test index", "[strings]") {
   }
 }
 
+TEST_CASE("Test index_any", "[strings]") {
+  auto npos = std::string_view::npos;
+  auto test_cases = std::vector<std::tuple<
+    std::string_view,
+    std::string_view,
+    std::string_view::size_type
+  >>{
+    {"", "", npos},
+    {"", "a", npos},
+    {"", "abc", npos},
+    {"a", "", npos},
+    {"a", "a", 0},
+    {"aaa", "a", 0},
+    {"abc", "xyz", npos},
+    {"abc", "xcz", 2},
+    {"ab☺c", "x☺yz", 2},
+    {"a☺b☻c☹d", "cx", "a☺b☻"sv.size()},
+    {"a☺b☻c☹d", "uvw☻xyz", "a☺b"sv.size()},
+    {"aRegExp*", ".(|)*+?^$[]", 7},
+    {"1....2....3....41....2....3....41....2....3....4", " ", npos},
+  };
+  for (auto [s, substr, exp] : test_cases) {
+    CAPTURE(s, substr);
+    CHECK(index_any(s, substr) == exp);
+  }
+}
+
 TEST_CASE("Test last_index", "[strings]") {
   auto npos = std::string_view::npos;
   auto test_cases = std::vector<std::tuple<
@@ -143,6 +170,33 @@ TEST_CASE("Test last_index", "[strings]") {
   for (auto [s, substr, exp] : test_cases) {
     CAPTURE(s, substr);
     CHECK(last_index(s, substr) == exp);
+  }
+}
+
+TEST_CASE("Test last_index_any", "[strings]") {
+  auto npos = std::string_view::npos;
+  auto test_cases = std::vector<std::tuple<
+    std::string_view,
+    std::string_view,
+    std::string_view::size_type
+  >>{
+    {"", "", npos},
+    {"", "a", npos},
+    {"", "abc", npos},
+    {"a", "", npos},
+    {"a", "a", 0},
+    {"aaa", "a", 2},
+    {"abc", "xyz", npos},
+    {"abc", "ab", 1},
+    {"ab☺c", "x☺yz", 2},
+    {"a☺b☻c☹d", "cx", "a☺b☻"sv.size()},
+    {"a☺b☻c☹d", "uvw☻xyz", "a☺b"sv.size()},
+    {"a.RegExp*", ".(|)*+?^$[]", 8},
+    {"1....2....3....41....2....3....41....2....3....4", " ", npos},
+  };
+  for (auto [s, substr, exp] : test_cases) {
+    CAPTURE(s, substr);
+    CHECK(last_index_any(s, substr) == exp);
   }
 }
 

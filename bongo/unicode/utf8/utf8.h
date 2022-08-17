@@ -230,6 +230,10 @@ constexpr std::pair<rune, size_t> decode_last(InputIt begin, InputIt end) noexce
   return {r1, size};
 }
 
+constexpr auto decode_last(std::string_view s) noexcept -> std::pair<rune, size_t> {
+  return decode_last(s.begin(), s.end());
+}
+
 // Returns the number of runes in a ranges of bytes.
 template <std::input_iterator InputIt>
 constexpr size_t count(InputIt begin, InputIt end) noexcept {

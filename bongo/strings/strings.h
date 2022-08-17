@@ -9,7 +9,10 @@
 
 #include <bongo/detail/bytealg.h>
 #include <bongo/strings/builder.h>
+#include <bongo/strings/detail/ascii_set.h>
 #include <bongo/unicode/utf8.h>
+
+#include <iostream>
 
 namespace bongo::strings {
 
@@ -25,9 +28,13 @@ constexpr auto index(std::string_view s, uint8_t c) -> std::string_view::size_ty
 // std::string_view::npos if rune is not present in s.
 constexpr auto index(std::string_view s, rune r) -> std::string_view::size_type;
 
+constexpr auto index_any(std::string_view s, std::string_view chars) -> std::string_view::size_type;
+
 constexpr auto last_index(std::string_view s, std::string_view substr) -> std::string_view::size_type;
 
 constexpr auto last_index(std::string_view s, uint8_t c) -> std::string_view::size_type;
+
+constexpr auto last_index_any(std::string_view s, std::string_view chars) -> std::string_view::size_type;
 
 auto split(std::string_view s, std::string_view sep, int n) -> std::vector<std::string_view>;
 
@@ -122,6 +129,36 @@ constexpr auto index(std::string_view s, rune r) -> std::string_view::size_type 
   }
 }
 
+constexpr auto index_any(std::string_view s, std::string_view chars) -> std::string_view::size_type {
+  namespace utf8 = unicode::utf8;
+  if (chars.empty()) {
+    return std::string_view::npos;
+  }
+  if (chars.size() == 1) {
+    auto r = static_cast<rune>(chars[0]);
+    if (r >= utf8::rune_self) {
+      r = utf8::rune_error;
+    }
+    return index(s, r);
+  }
+  if (s.size() > 8) {
+    if (auto [as, is_ascii] = detail::make_ascii_set(chars); is_ascii) {
+      for (std::string_view::size_type i = 0; i < s.size(); ++i) {
+        if (as.contains(s[i])) {
+          return i;
+        }
+      }
+      return std::string_view::npos;
+    }
+  }
+  for (auto [i, r] : utf8::range{s}) {
+    if (index(chars, r) != std::string_view::npos) {
+      return i;
+    }
+  }
+  return std::string_view::npos;
+}
+
 constexpr auto last_index(std::string_view s, std::string_view substr) -> std::string_view::size_type {
   if (substr.size() == 0) {
     return s.size();
@@ -157,6 +194,55 @@ constexpr auto last_index(std::string_view s, std::string_view substr) -> std::s
 
 constexpr auto last_index(std::string_view s, uint8_t c) -> std::string_view::size_type {
   return s.find_last_of(c);
+}
+
+constexpr auto last_index_any(std::string_view s, std::string_view chars) -> std::string_view::size_type {
+  namespace utf8 = unicode::utf8;
+  if (chars.empty()) {
+    return std::string_view::npos;
+  }
+  if (s.size() == 1) {
+    auto r = static_cast<rune>(s[0]);
+    if (r >= utf8::rune_self) {
+      r = utf8::rune_error;
+    }
+    if (index(chars, r) != std::string_view::npos) {
+      return 0;
+    }
+    return std::string_view::npos;
+  }
+  if (s.size() > 8) {
+    if (auto [as, is_ascii] = detail::make_ascii_set(chars); is_ascii) {
+      for (int i = s.size() - 1; i >= 0; --i) {
+        if (as.contains(s[i])) {
+          return i;
+        }
+      }
+      return std::string_view::npos;
+    }
+  }
+  if (chars.size() == 1) {
+    auto r = static_cast<rune>(chars[0]);
+    if (r >= utf8::rune_self) {
+      r = utf8::rune_error;
+    }
+    for (int i = s.size(); i > 0;) {
+      auto [rc, size] = utf8::decode_last(s.substr(0, i));
+      i -= size;
+      if (rc == r) {
+        return i;
+      }
+    }
+    return std::string_view::npos;
+  }
+  for (int i = s.size(); i > 0;) {
+    auto [r, size] = utf8::decode_last(s.substr(0, i));
+    i -= size;
+    if (index(chars, r) != std::string_view::npos) {
+      return i;
+    }
+  }
+  return std::string_view::npos;
 }
 
 constexpr auto count(std::string_view s, std::string_view substr) -> int {
