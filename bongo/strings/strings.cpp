@@ -49,7 +49,7 @@ auto generic_split(std::string_view s, std::string_view sep, int sep_save, int n
   --n;
   int i = 0;
   while (i < n) {
-    auto m = index(s, sep);
+    auto m = strings::index(s, sep);
     if (m == std::string_view::npos) {
       break;
     }

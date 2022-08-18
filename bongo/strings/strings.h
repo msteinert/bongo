@@ -9,30 +9,29 @@
 
 #include <bongo/detail/bytealg.h>
 #include <bongo/strings/builder.h>
+#include <bongo/strings/concepts.h>
 #include <bongo/strings/detail/ascii_set.h>
+#include <bongo/strings/detail/trim.h>
+#include <bongo/strings/index.h>
 #include <bongo/unicode/utf8.h>
 
 namespace bongo::strings {
 
-// Returns the index of the first instance of substr in s, or
-// std::string_view::npos if substr is not present in s.
-constexpr auto index(std::string_view s, std::string_view substr) -> std::string_view::size_type;
+constexpr auto trim(std::string_view s, std::string_view cutset) -> std::string_view;
 
-// Returns the index of the first instance of c in s, or std::string_view::npos
-// if c is not present is s.
-constexpr auto index(std::string_view s, uint8_t c) -> std::string_view::size_type;
+constexpr auto trim_left(std::string_view s, std::string_view cutset) -> std::string_view;
 
-// Returns the index of the first instance of the Unicode code point r, or
-// std::string_view::npos if rune is not present in s.
-constexpr auto index(std::string_view s, rune r) -> std::string_view::size_type;
+template <IndexFunction T>
+constexpr auto trim_left(std::string_view s, T&& func) -> std::string_view;
 
-constexpr auto index_any(std::string_view s, std::string_view chars) -> std::string_view::size_type;
+constexpr auto trim_right(std::string_view s, std::string_view cutset) -> std::string_view;
 
-constexpr auto last_index(std::string_view s, std::string_view substr) -> std::string_view::size_type;
+template <IndexFunction T>
+constexpr auto trim_right(std::string_view s, T&& func) -> std::string_view;
 
-constexpr auto last_index(std::string_view s, uint8_t c) -> std::string_view::size_type;
+constexpr auto trim_prefix(std::string_view s, std::string_view prefix) -> std::string_view;
 
-constexpr auto last_index_any(std::string_view s, std::string_view chars) -> std::string_view::size_type;
+constexpr auto trim_suffix(std::string_view s, std::string_view suffix) -> std::string_view;
 
 auto split(std::string_view s, std::string_view sep, int n) -> std::vector<std::string_view>;
 
@@ -48,20 +47,11 @@ auto join(std::span<std::string_view> e, std::string_view sep) -> std::string;
 // an empty string, Count returns 1 + the number of Unicode code points in s.
 constexpr auto count(std::string_view s, std::string_view substr) -> int;
 
-// Reports whether substr is within s.
-template <typename T>
-constexpr auto contains(std::string_view s, T substr) -> bool;
-
 // Tests whether the string s begins with prefix.
 constexpr auto has_prefix(std::string_view s, std::string_view prefix) -> bool;
 
 // Tests whether the string s ends with suffix.
 constexpr auto has_suffix(std::string_view s, std::string_view suffix) -> bool;
-
-template <typename T>
-concept MapFunction = requires (T func, rune r) {
-  { func(r) } -> std::same_as<rune>;
-};
 
 template <MapFunction T>
 auto map(T&& mapping, std::string_view s) -> std::string;
@@ -77,180 +67,82 @@ auto replace(std::string_view s, std::string_view old_s, std::string_view new_s)
 
 constexpr auto cut(std::string_view s, std::string_view sep) -> std::tuple<std::string_view, std::string_view, bool>;
 
-constexpr auto index(std::string_view s, std::string_view substr) -> std::string_view::size_type {
-  if (substr.size() == 0) {
-    return 0;
-  } else if (substr.size() == 1) {
-    return s.find_first_of(substr.front());
-  } else if (substr.size() == s.size()) {
-    return substr == s ? 0 : std::string_view::npos;
-  } else if (substr.size() > s.size()) {
-    return std::string_view::npos;
-  }
-  auto c0 = substr[0];
-  auto c1 = substr[1];
-  std::string_view::size_type i = 0, fails = 0;
-  auto t = s.size() - substr.size() + 1;
-  while (i < t) {
-    if (s[i] != c0) {
-      auto o = s.substr(i+1).find_first_of(c0);
-      if (o == std::string_view::npos) {
-        return std::string_view::npos;
-      }
-      i += o + 1;
-    }
-    if (s[i+1] == c1 && s.substr(i, substr.size()) == substr) {
-      return i;
-    }
-    ++i;
-    ++fails;
-    if (fails >= (4+i)>>4 && i < t) {
-      auto j = bongo::detail::bytealg::index_rabin_karp(s.substr(i), substr);
-      if (j == std::string_view::npos) {
-        return std::string_view::npos;
-      }
-      return i + j;
-    }
-  }
-  return std::string_view::npos;
-}
-
-constexpr auto index(std::string_view s, uint8_t c) -> std::string_view::size_type {
-  return s.find_first_of(c);
-}
-
-constexpr auto index(std::string_view s, rune r) -> std::string_view::size_type {
+constexpr auto trim(std::string_view s, std::string_view cutset) -> std::string_view {
   namespace utf8 = unicode::utf8;
-  if (0 <= r && r < utf8::rune_self) {
-    return index(s, static_cast<uint8_t>(r));
-  } else if (r == utf8::rune_error) {
-    for (auto [i, r] : utf8::range{s}) {
-      if (r == utf8::rune_error) {
-        return i;
-      }
-    }
-    return std::string_view::npos;
-  } else if (!utf8::valid(r)) {
-    return std::string_view::npos;
+  if (s.empty() || cutset.empty()) {
+    return s;
+  }
+  if (cutset.size() == 1 && utf8::to_rune(cutset[0]) < utf8::rune_self) {
+    return detail::trim_left(detail::trim_right(s, cutset[0]), cutset[0]);
+  }
+  if (auto [as, ok] = detail::make_ascii_set(cutset); ok) {
+    return detail::trim_left(detail::trim_right(s, as), as);
+  }
+  return detail::trim_left(detail::trim_right(s, cutset), cutset);
+}
+
+constexpr auto trim_left(std::string_view s, std::string_view cutset) -> std::string_view {
+  namespace utf8 = unicode::utf8;
+  if (s.empty() || cutset.empty()) {
+    return s;
+  }
+  if (cutset.size() == 1 && utf8::to_rune(cutset[0]) < utf8::rune_self) {
+    return detail::trim_left(s, cutset[0]);
+  }
+  if (auto [as, ok] = detail::make_ascii_set(cutset); ok) {
+    return detail::trim_left(s, as);
+  }
+  return detail::trim_left(s, cutset);
+}
+
+template <IndexFunction T>
+constexpr auto trim_left(std::string_view s, T&& func) -> std::string_view {
+  auto i = detail::index(s, std::move(func), false);
+  if (i == std::string_view::npos) {
+    return "";
+  }
+  return s.substr(i);
+}
+
+constexpr auto trim_right(std::string_view s, std::string_view cutset) -> std::string_view {
+  namespace utf8 = unicode::utf8;
+  if (s.empty() || cutset.empty()) {
+    return s;
+  }
+  if (cutset.size() == 1 && utf8::to_rune(cutset[0]) < utf8::rune_self) {
+    return detail::trim_right(s, cutset[0]);
+  }
+  if (auto [as, ok] = detail::make_ascii_set(cutset); ok) {
+    return detail::trim_right(s, as);
+  }
+  return detail::trim_right(s, cutset);
+}
+
+template <IndexFunction T>
+constexpr auto trim_right(std::string_view s, T&& func) -> std::string_view {
+  namespace utf8 = unicode::utf8;
+  auto i = detail::last_index(s, std::move(func), false);
+  if (i != std::string_view::npos && utf8::to_rune(s[i]) >= utf8::rune_self) {
+    auto [_, wid] = utf8::decode(s.substr(i));
+    i += wid;
   } else {
-    return index(s, utf8::encode(r));
+    ++i;
   }
+  return s.substr(0, i);
 }
 
-constexpr auto index_any(std::string_view s, std::string_view chars) -> std::string_view::size_type {
-  namespace utf8 = unicode::utf8;
-  if (chars.empty()) {
-    return std::string_view::npos;
+constexpr auto trim_prefix(std::string_view s, std::string_view prefix) -> std::string_view {
+  if (has_prefix(s, prefix)) {
+    return s.substr(prefix.size());
   }
-  if (chars.size() == 1) {
-    auto r = static_cast<rune>(chars[0]);
-    if (r >= utf8::rune_self) {
-      r = utf8::rune_error;
-    }
-    return index(s, r);
-  }
-  if (s.size() > 8) {
-    if (auto [as, is_ascii] = detail::make_ascii_set(chars); is_ascii) {
-      for (std::string_view::size_type i = 0; i < s.size(); ++i) {
-        if (as.contains(s[i])) {
-          return i;
-        }
-      }
-      return std::string_view::npos;
-    }
-  }
-  for (auto [i, r] : utf8::range{s}) {
-    if (index(chars, r) != std::string_view::npos) {
-      return i;
-    }
-  }
-  return std::string_view::npos;
+  return s;
 }
 
-constexpr auto last_index(std::string_view s, std::string_view substr) -> std::string_view::size_type {
-  if (substr.size() == 0) {
-    return s.size();
-  } else if (substr.size() == 1) {
-    return s.find_last_of(substr.front());
-  } else if (substr.size() == s.size()) {
-    if (substr == s) {
-      return 0;
-    }
-    return std::string_view::npos;
-  } else if (substr.size() > s.size()) {
-    return std::string_view::npos;
+constexpr auto trim_suffix(std::string_view s, std::string_view suffix) -> std::string_view {
+  if (has_suffix(s, suffix)) {
+    return s.substr(0, s.size()-suffix.size());
   }
-  auto [hashss, pow] = bongo::detail::bytealg::hash_reverse(substr);
-  auto last = s.size() - substr.size();
-  uint32_t h = 0;
-  for (auto i = s.size() - 1; i >= last; --i) {
-    h = h*bongo::detail::bytealg::prime_rk + static_cast<uint32_t>(s[i]);
-  }
-  if (h == hashss && s.substr(last) == substr) {
-    return last;
-  }
-  for (auto i = static_cast<int>(last) - 1; i >= 0; --i) {
-    h *= bongo::detail::bytealg::prime_rk;
-    h += static_cast<uint32_t>(s[i]);
-    h -= pow * static_cast<uint32_t>(s[i+substr.size()]);
-    if (h == hashss && s.substr(i, substr.size()) == substr) {
-      return i;
-    }
-  }
-  return std::string_view::npos;
-}
-
-constexpr auto last_index(std::string_view s, uint8_t c) -> std::string_view::size_type {
-  return s.find_last_of(c);
-}
-
-constexpr auto last_index_any(std::string_view s, std::string_view chars) -> std::string_view::size_type {
-  namespace utf8 = unicode::utf8;
-  if (chars.empty()) {
-    return std::string_view::npos;
-  }
-  if (s.size() == 1) {
-    auto r = static_cast<rune>(s[0]);
-    if (r >= utf8::rune_self) {
-      r = utf8::rune_error;
-    }
-    if (index(chars, r) != std::string_view::npos) {
-      return 0;
-    }
-    return std::string_view::npos;
-  }
-  if (s.size() > 8) {
-    if (auto [as, is_ascii] = detail::make_ascii_set(chars); is_ascii) {
-      for (int i = s.size() - 1; i >= 0; --i) {
-        if (as.contains(s[i])) {
-          return i;
-        }
-      }
-      return std::string_view::npos;
-    }
-  }
-  if (chars.size() == 1) {
-    auto r = static_cast<rune>(chars[0]);
-    if (r >= utf8::rune_self) {
-      r = utf8::rune_error;
-    }
-    for (int i = s.size(); i > 0;) {
-      auto [rc, size] = utf8::decode_last(s.substr(0, i));
-      i -= size;
-      if (rc == r) {
-        return i;
-      }
-    }
-    return std::string_view::npos;
-  }
-  for (int i = s.size(); i > 0;) {
-    auto [r, size] = utf8::decode_last(s.substr(0, i));
-    i -= size;
-    if (index(chars, r) != std::string_view::npos) {
-      return i;
-    }
-  }
-  return std::string_view::npos;
+  return s;
 }
 
 constexpr auto count(std::string_view s, std::string_view substr) -> int {
@@ -275,11 +167,6 @@ constexpr auto count(std::string_view s, std::string_view substr) -> int {
     ++n;
     s = s.substr(i+substr.size());
   }
-}
-
-template <typename T>
-constexpr auto contains(std::string_view s, T substr) -> bool {
-  return index(s, substr) != std::string_view::npos;
 }
 
 constexpr auto has_prefix(std::string_view s, std::string_view prefix) -> bool {

@@ -13,7 +13,7 @@ class ascii_set {
   uint32_t bits_[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
  public:
-  constexpr auto contains(uint8_t c) -> bool { return (bits_[c/32] & (1 << (c % 32))) != 0; }
+  constexpr auto contains(uint8_t c) const -> bool { return (bits_[c/32] & (1 << (c % 32))) != 0; }
   constexpr auto operator[](int i) -> uint32_t& { return bits_[i]; }
 };
 

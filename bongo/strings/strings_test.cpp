@@ -457,7 +457,8 @@ static auto ten_runes(rune ch) -> std::string {
 }
 
 static auto rot13(rune r) -> rune {
-  auto step = static_cast<rune>(13);
+  namespace utf8 = unicode::utf8;
+  auto step = utf8::to_rune(13);
   if (r >= 'a' && r <= 'z') {
     return ((r - 'a' + step) % 26) + 'a';
   }
@@ -483,7 +484,7 @@ TEST_CASE("Test map", "[strings]") {
   CHECK(map([](rune) { return utf8::max_rune; }, a) == ten_runes(utf8::max_rune));
 
   // 2. Shrink
-  CHECK(map([](rune) { return static_cast<rune>('a'); }, ten_runes(utf8::max_rune)) == a);
+  CHECK(map([](rune) { return utf8::to_rune('a'); }, ten_runes(utf8::max_rune)) == a);
 
   // 3. Rot13
   CHECK(map(&rot13, "a to zed") == "n gb mrq");
@@ -517,6 +518,49 @@ TEST_CASE("Test map", "[strings]") {
     return r;
   };
   CHECK(map(trim_spaces, "   abc    ABC   ") == "abcABC");
+}
+
+TEST_CASE("Test trim", "[strings]") {
+  auto test_cases = std::vector<std::tuple<
+    std::string_view(*)(std::string_view, std::string_view),
+    std::string_view,
+    std::string_view,
+    std::string_view
+  >>{
+    {&trim, "abba", "a", "bb"},
+    {&trim, "abba", "ab", ""},
+    {&trim_left, "abba", "ab", ""},
+    {&trim_right, "abba", "ab", ""},
+    {&trim_left, "abba", "a", "bba"},
+    {&trim_left, "abba", "b", "abba"},
+    {&trim_right, "abba", "a", "abb"},
+    {&trim_right, "abba", "b", "abba"},
+    {&trim, "<tag>", "<>", "tag"},
+    {&trim, "* listitem", " *", "listitem"},
+    {&trim, R"("quote")", R"(")", "quote"},
+    {&trim, "\u2C6F\u2C6F\u0250\u0250\u2C6F\u2C6F", "\u2C6F", "\u0250\u0250"},
+    {&trim, "\x80test\xff", "\xff", "test"},
+    {&trim, " Ġ ", " ", "Ġ"},
+    {&trim, " Ġİ0", "0 ", "Ġİ"},
+    //empty string tests
+    {&trim, "abba", "", "abba"},
+    {&trim, "", "123", ""},
+    {&trim, "", "", ""},
+    {&trim_left, "abba", "", "abba"},
+    {&trim_left, "", "123", ""},
+    {&trim_left, "", "", ""},
+    {&trim_right, "abba", "", "abba"},
+    {&trim_right, "", "123", ""},
+    {&trim_right, "", "", ""},
+    {&trim_right, "☺\xc0", "☺", "☺\xc0"},
+    {&trim_prefix, "aabb", "a", "abb"},
+    {&trim_prefix, "aabb", "b", "aabb"},
+    {&trim_suffix, "aabb", "a", "aabb"},
+    {&trim_suffix, "aabb", "b", "aab"},
+  };
+  for (auto [fn, s, cutset, exp] : test_cases) {
+    CHECK(fn(s, cutset) == exp);
+  }
 }
 
 TEST_CASE("Test cut", "[strings]") {

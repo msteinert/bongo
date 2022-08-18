@@ -71,14 +71,15 @@ std::error_code reader::unread_byte() {
 }
 
 std::tuple<rune, int, std::error_code> reader::read_rune() {
+  namespace utf8 = unicode::utf8;
   if (i_ >= s_.size()) {
     prev_rune_ = -1;
     return {0, 0, io::eof};
   }
   prev_rune_ = static_cast<int>(i_);
-  if (auto c = s_[i_]; static_cast<rune>(c) < unicode::utf8::rune_self) {
+  if (auto c = s_[i_]; utf8::to_rune(c) < unicode::utf8::rune_self) {
     ++i_;
-    return {static_cast<rune>(c), 1, nil};
+    return {utf8::to_rune(c), 1, nil};
   }
   auto [ch, size] = unicode::utf8::decode(std::next(s_.begin(), i_), s_.end());
   i_ += size;
