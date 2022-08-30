@@ -17,25 +17,22 @@ namespace bongo::io {
 template <Reader... Ts>
 class multi_reader {
   std::tuple<Ts&...> readers_;
-  size_t size_;
-  size_t i_ = 0;
 
  public:
   multi_reader(Ts&... readers)
-      : readers_{readers...}
-      , size_{sizeof... (readers)} {}
+      : readers_{readers...} {}
 
-  std::pair<int, std::error_code> read(std::span<uint8_t> p) {
+  std::pair<long, std::error_code> read(std::span<uint8_t> p) {
     using io::read;
-    while (i_ < size_) {
+    for (size_t i = 0; i < sizeof...(Ts);) {
       auto [n, err] = detail::visit_at([&](auto& r) {
         return read(r, p);
-      }, readers_, i_);
+      }, readers_, i);
       if (err == eof) {
-        ++i_;
+        ++i;
       }
       if (n > 0 || err != eof) {
-        if (err == eof && i_ < size_) {
+        if (err == eof && i < sizeof...(Ts)) {
           err = nil;
         }
         return {n, err};
@@ -48,43 +45,41 @@ class multi_reader {
 template <Writer... Ts>
 class multi_writer {
   std::tuple<Ts&...> writers_;
-  size_t size_;
 
  public:
   multi_writer(Ts&... writers)
-      : writers_{writers...}
-      , size_{sizeof... (writers)} {}
+      : writers_{writers...} {}
 
-  std::pair<int, std::error_code> write(std::span<uint8_t const> p) {
+  std::pair<long, std::error_code> write(std::span<uint8_t const> p) {
     using io::write;
-    for (auto i = 0; i < static_cast<int>(size_); ++i) {
+    for (size_t i = 0; i < sizeof...(Ts); ++i) {
       auto [n, err] = detail::visit_at([&](auto& w) {
         return write(w, p);
       }, writers_, i);
       if (err != nil) {
         return {n, err};
       }
-      if (n != static_cast<int>(p.size())) {
+      if (n != static_cast<long>(p.size())) {
         return {n, error::short_write};
       }
     }
-    return {static_cast<int>(p.size()), nil};
+    return {static_cast<long>(p.size()), nil};
   }
 
-  std::pair<int, std::error_code> write_string(std::string_view s) {
+  std::pair<long, std::error_code> write_string(std::string_view s) {
     using io::write_string;
-    for (auto i = 0; i < static_cast<int>(size_); ++i) {
+    for (size_t i = 0; i < sizeof...(Ts); ++i) {
       auto [n, err] = detail::visit_at([&](auto& w) {
         return write_string(w, s);
-      });
+      }, writers_, i);
       if (err != nil) {
         return {n, err};
       }
-      if (n != static_cast<int>(s.size())) {
+      if (n != static_cast<long>(s.size())) {
         return {n, error::short_write};
       }
     }
-    return {static_cast<int>(s.size()), nil};
+    return {static_cast<long>(s.size()), nil};
   }
 };
 

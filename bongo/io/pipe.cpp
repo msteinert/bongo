@@ -18,7 +18,7 @@
 
 namespace bongo::io {
 
-std::pair<int, std::error_code> pipe::read(std::span<uint8_t> b) {
+std::pair<long, std::error_code> pipe::read(std::span<uint8_t> b) {
   std::optional<std::monostate> d;
   switch (select(
     recv_select_case(done_, d),
@@ -30,14 +30,14 @@ std::pair<int, std::error_code> pipe::read(std::span<uint8_t> b) {
     break;
   }
 
-  int nr = 0;
+  long nr = 0;
   std::optional<std::vector<uint8_t>> bw;
   switch (select(
     recv_select_case(wr_chan_, bw),
     recv_select_case(done_, d)
   )) {
   case 0:
-    nr = static_cast<int>(std::min(bw->size(), b.size()));
+    nr = static_cast<long>(std::min(bw->size(), b.size()));
     std::copy_n(bw->begin(), nr, b.begin());
     rd_chan_ << nr;
     return {nr, nil};
@@ -56,7 +56,7 @@ std::error_code pipe::close_read(std::error_code err) {
   return nil;
 }
 
-std::pair<int, std::error_code> pipe::write(std::span<uint8_t const> b) {
+std::pair<long, std::error_code> pipe::write(std::span<uint8_t const> b) {
   auto lock = std::unique_lock<std::mutex>{wr_mutex_, std::defer_lock};
   std::optional<std::monostate> d;
   switch (select(
@@ -70,9 +70,9 @@ std::pair<int, std::error_code> pipe::write(std::span<uint8_t const> b) {
     break;
   }
 
-  int n = 0;
+  long n = 0;
   for (auto once = true; once || b.size() > 0; once = false) {
-    int nw;
+    long nw;
     switch (select(
       send_select_case(wr_chan_, std::vector<uint8_t>{b.begin(), b.end()}),
       recv_select_case(done_, d)

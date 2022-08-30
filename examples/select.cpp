@@ -24,7 +24,7 @@ int main() try {
     c1 << "two"s;
   }};
 
-  for (int i = 0; i < 2; ++i) {
+  for (long i = 0; i < 2; ++i) {
     std::optional<std::string> msg0, msg1;
     bongo::select_case cases[] = {
       bongo::recv_select_case(c0, msg0),

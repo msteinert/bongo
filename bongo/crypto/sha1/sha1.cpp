@@ -54,7 +54,7 @@ void hash::reset() noexcept {
   len_ = 0;
 }
 
-std::pair<int, std::error_code> hash::write(std::span<uint8_t const> p) {
+std::pair<long, std::error_code> hash::write(std::span<uint8_t const> p) {
   auto nn = p.size();
   len_ += static_cast<uint64_t>(nn);
   if (nx_ > 0) {
@@ -146,7 +146,7 @@ std::error_code hash::unmarshal_binary(std::span<uint8_t const> b) {
   std::copy_n(b.begin(), x.size(), x.begin());
   b = b.subspan(x.size());
   std::tie(b, len_) = consume_uint64(b);
-  nx_ = static_cast<int>(len_ % detail::chunk);
+  nx_ = static_cast<long>(len_ % detail::chunk);
   return nil;
 }
 
@@ -183,7 +183,7 @@ std::span<uint8_t> hash::check_sum(std::span<uint8_t> digest) {
 std::span<uint8_t> hash::const_sum(std::span<uint8_t> digest) {
   uint8_t length[8];
   auto l = len_ << 3;
-  for (int unsigned i = 0; i < 8; ++i) {
+  for (long unsigned i = 0; i < 8; ++i) {
     length[i] = static_cast<uint8_t>(l >> (56 - 8*i));
   }
 

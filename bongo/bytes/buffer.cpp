@@ -16,8 +16,6 @@
 namespace bongo::bytes {
 namespace {
 
-static constexpr size_t npos = static_cast<size_t>(-1);
-
 template <typename T>
 size_t find_first_of(std::span<T> s, T const& d) {
   size_t i = 0;
@@ -31,15 +29,15 @@ size_t find_first_of(std::span<T> s, T const& d) {
 
 }  // namespace
 
-buffer::buffer(std::span<uint8_t> const s) {
+buffer::buffer(std::span<uint8_t const> s) {
   buf_ = allocator{}.allocate(s.size());
-  size_ = s.size();
+  size_ = cap_ = s.size();
   std::copy(s.begin(), s.end(), buf_);
 }
 
 buffer::buffer(std::string_view s) {
   buf_ = allocator{}.allocate(s.size());
-  size_ = s.size();
+  size_ = cap_ = s.size();
   std::copy(s.begin(), s.end(), buf_);
 }
 
@@ -86,22 +84,22 @@ buffer::~buffer() {
 }
 
 std::span<uint8_t> buffer::bytes() noexcept {
-  return std::span{buf_+off_, size_};
+  return std::span{begin(), static_cast<size_t>(size_)};
 }
 
 std::span<uint8_t const> buffer::bytes() const noexcept {
-  return std::span{buf_+off_, size_};
+  return std::span{begin(), static_cast<size_t>(size_)};
 }
 
 std::string_view buffer::str() const {
-  return std::string_view{reinterpret_cast<char const*>(buf_)+off_, size_};
+  return std::string_view{reinterpret_cast<char const*>(begin()), static_cast<size_t>(size_)};
 }
 
-size_t buffer::size() const noexcept {
+long buffer::size() const noexcept {
   return size_;
 }
 
-size_t buffer::capacity() const noexcept {
+long buffer::capacity() const noexcept {
   return cap_;
 }
 
@@ -114,12 +112,8 @@ void buffer::reset() noexcept {
   last_read_ = read_op::invalid;
 }
 
-int buffer::grow(size_t n) {
-  if (n == 0) {
-    return 0;
-  }
-  auto m = size();
-  if (m == 0 && off_ != 0) {
+long buffer::grow(long n) {
+  if (size_ == 0 && off_ != 0) {
     reset();
   }
   if (buf_ == nullptr && n <= small_buffer_size) {
@@ -127,25 +121,33 @@ int buffer::grow(size_t n) {
     cap_ = small_buffer_size;
     return 0;
   }
-  if ((cap_-size_)/2 >= n) {
-    std::copy(buf_+off_, buf_+off_+size_, buf_);
-  } else if (cap_ > std::numeric_limits<size_t>::max()-cap_-n) {
+  if (n <= cap_-size_-off_) {
+    return off_ + size_;
+  }
+  if (n <= cap_/2-size_) {
+    std::copy(begin(), end(), buf_);
+  } else if (cap_ > std::numeric_limits<long>::max()-cap_-n) {
     throw std::invalid_argument{"bytes::buffer: too large"};
   } else {
-    size_t cap = 2*cap_ + n;
-    auto buf = allocator{}.allocate(cap);
-    std::copy(buf_+off_, buf_+off_+size_, buf);
-    if (buf_ != nullptr) {
-      allocator{}.deallocate(buf_, cap_);
+    auto cap = size_ + n;
+    if (cap < 2*cap_) {
+      cap = 2 * cap_;
     }
-    buf_ = buf;
-    cap_ = cap;
+    auto buf = allocator{}.allocate(cap);
+    if (buf != nullptr) {
+      std::copy(begin(), end(), buf);
+      allocator{}.deallocate(buf_, cap_);
+      buf_ = nullptr;
+      cap_ = 0;
+    }
+    std::swap(buf_, buf);
+    std::swap(cap_, cap);
   }
   off_ = 0;
   return size_;
 }
 
-void buffer::truncate(size_t n) {
+void buffer::truncate(long n) {
   if (n == 0) {
     reset();
     return;
@@ -155,24 +157,24 @@ void buffer::truncate(size_t n) {
     throw std::invalid_argument{"bytes::buffer: truncation out of range"};
   }
   if (off_ > 0) {
-    std::copy(buf_+off_, buf_+off_+size_, buf_);
+    std::copy(begin(), end(), buf_);
     off_ = 0;
   }
   size_ = n;
 }
 
-std::pair<int, std::error_code> buffer::write(std::span<uint8_t const> p) {
+std::pair<long, std::error_code> buffer::write(std::span<uint8_t const> p) {
   last_read_ = read_op::invalid;
-  grow(p.size());
-  std::copy(p.begin(), p.end(), buf_+off_+size_);
+  auto m = grow(p.size());
+  std::copy(p.begin(), p.end(), buf_+m);
   size_ += p.size();
   return {p.size(), nil};
 }
 
-std::pair<int, std::error_code> buffer::write_string(std::string_view s) {
+std::pair<long, std::error_code> buffer::write_string(std::string_view s) {
   last_read_ = read_op::invalid;
-  grow(s.size());
-  std::copy(s.begin(), s.end(), buf_+off_+size_);
+  auto m = grow(s.size());
+  std::copy(s.begin(), s.end(), buf_+m);
   size_ += s.size();
   return {s.size(), nil};
 }
@@ -185,20 +187,20 @@ std::error_code buffer::write_byte(uint8_t b) noexcept {
   return nil;
 }
 
-std::pair<int, std::error_code> buffer::write_rune(rune r) {
+std::pair<long, std::error_code> buffer::write_rune(rune r) {
   if (static_cast<uint32_t>(r) < unicode::utf8::rune_self) {
     write_byte(static_cast<uint8_t>(r));
     return {1, nil};
   }
   last_read_ = read_op::invalid;
-  grow(unicode::utf8::utf_max);
-  auto begin = buf_ + off_ + size_;
+  auto m = grow(unicode::utf8::utf_max);
+  auto begin = std::next(buf_, m);
   auto n = std::distance(begin, unicode::utf8::encode(r, begin));
   size_ += n;
   return {n, nil};
 }
 
-std::pair<int, std::error_code> buffer::read(std::span<uint8_t> p) noexcept {
+std::pair<long, std::error_code> buffer::read(std::span<uint8_t> p) noexcept {
   last_read_ = read_op::invalid;
   if (empty()) {
     reset();
@@ -207,9 +209,9 @@ std::pair<int, std::error_code> buffer::read(std::span<uint8_t> p) noexcept {
     }
     return {0, io::eof};
   }
-  int n = std::min(size_, p.size());
+  long n = std::min(size_, static_cast<long>(p.size()));
   if (n > 0) {
-    std::copy(buf_+off_, buf_+off_+n, p.begin());
+    std::copy(begin(), std::next(begin(), n), p.begin());
     off_ += n;
     size_ -= n;
     last_read_ = read_op::read;
@@ -224,10 +226,11 @@ std::pair<uint8_t, std::error_code> buffer::read_byte() noexcept {
   }
   auto c = buf_[off_++];
   --size_;
+  last_read_ = read_op::read;
   return {c, nil};
 }
 
-std::tuple<rune, int, std::error_code> buffer::read_rune() noexcept {
+std::tuple<rune, long, std::error_code> buffer::read_rune() noexcept {
   if (empty()) {
     reset();
     return {0, 0, io::eof};
@@ -238,7 +241,7 @@ std::tuple<rune, int, std::error_code> buffer::read_rune() noexcept {
     last_read_ = read_op::read_rune1;
     return {static_cast<rune>(c), 1, nil};
   }
-  auto [r, n] = unicode::utf8::decode(buf_+off_, buf_+off_+size_);
+  auto [r, n] = unicode::utf8::decode(begin(), end());
   off_ += n;
   size_ -= n;
   last_read_ = static_cast<read_op>(n);
@@ -261,18 +264,18 @@ std::error_code buffer::unread_rune() noexcept {
   if (last_read_ == read_op::invalid) {
     return error::unread_rune;
   }
-  if (static_cast<int>(off_) >= static_cast<int>(last_read_)) {
-    off_ -= static_cast<int>(last_read_);
-    size_ += static_cast<int>(last_read_);
+  if (off_ >= static_cast<long>(last_read_)) {
+    off_ -= static_cast<long>(last_read_);
+    size_ += static_cast<long>(last_read_);
   }
   last_read_ = read_op::invalid;
   return nil;
 }
 
-std::span<uint8_t> buffer::next(int n) noexcept {
+std::span<uint8_t> buffer::next(long n) noexcept {
   last_read_ = read_op::invalid;
-  auto m = size();
-  if (n > static_cast<int>(m)) {
+  auto m = size_;
+  if (n > m) {
     n = m;
   }
   auto data = bytes().subspan(0, n);

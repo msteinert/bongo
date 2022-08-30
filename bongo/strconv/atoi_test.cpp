@@ -48,7 +48,7 @@ TEST_CASE("Parse integer", "[strconv]") {
   SECTION("Base uint64") {
     auto test_cases = std::vector<std::tuple<
       std::string_view,
-      int,
+      long,
       std::pair<uint64_t, std::error_code>
     >>{
       {"", 0, {0, error::syntax}},
@@ -184,7 +184,7 @@ TEST_CASE("Parse integer", "[strconv]") {
   SECTION("Base int64") {
       auto test_cases = std::vector<std::tuple<
       std::string_view,
-      int,
+      long,
       std::pair<int64_t, std::error_code>
     >>{
       {"", 0, {0, error::syntax}},

@@ -23,16 +23,16 @@ TEST_CASE("Test channels", "[chan]") {
 
     {
       // Ensure receive from empty chan blocks
-      auto c = chan<int>{cap};
+      auto c = chan<long>{cap};
       auto recv1 = false;
       auto t = std::thread{[&]() {
-        int v;
+        long v;
         v << c;
         recv1 = true;
       }};
       auto recv2 = false;
       auto t2 = std::thread{[&]() {
-        int v;
+        long v;
         v << c;
         recv2 = true;
       }};
@@ -40,7 +40,7 @@ TEST_CASE("Test channels", "[chan]") {
       REQUIRE(recv1 == false);
       REQUIRE(recv2 == false);
       // Ensure that non-blocking receive does not block
-      std::optional<int> v;
+      std::optional<long> v;
       switch (select(
         recv_select_case(c, v),
         default_select_case()
@@ -50,27 +50,27 @@ TEST_CASE("Test channels", "[chan]") {
       default:
         break;
       }
-      c << 0;
-      c << 0;
+      c << 0l;
+      c << 0l;
       t.join();
       t2.join();
     }
 
     {
       // Ensure that send to a full chan blocks
-      auto c = chan<int>{cap};
-      for (int i = 0; i < static_cast<int>(cap); ++i) {
+      auto c = chan<long>{cap};
+      for (long i = 0; i < static_cast<long>(cap); ++i) {
         c << i;
       }
       std::atomic_bool sent = false;
       auto t = std::thread([&]() {
-        c << 0;
+        c << 0l;
         sent.store(true);
       });
       std::this_thread::sleep_for(1ms);
       REQUIRE(sent.load() == false);
       // Ensure that non-blocking send does not block
-      int v = 0;
+      long v = 0;
       switch (select(
         send_select_case(c, std::move(v)),
         default_select_case()
@@ -86,30 +86,30 @@ TEST_CASE("Test channels", "[chan]") {
 
     {
       // Ensure that we receive 0 from closed chan
-      auto c = chan<int>{cap};
-      for (int i = 0; i < static_cast<int>(cap); ++i) {
+      auto c = chan<long>{cap};
+      for (long i = 0; i < static_cast<long>(cap); ++i) {
         c << i;
       }
       c.close();
-      for (int i = 0; i < static_cast<int>(cap); ++i) {
-        int v;
+      for (long i = 0; i < static_cast<long>(cap); ++i) {
+        long v;
         v << c;
         REQUIRE(v == i);
       }
-      int v;
+      long v;
       v << c;
       REQUIRE(v == 0);
-      std::optional<int> w;
+      std::optional<long> w;
       w << c;
       REQUIRE(w.has_value() == false);
     }
 
     {
       // Ensure that close unblocks receive
-      auto c = chan<int>{cap};
+      auto c = chan<long>{cap};
       auto done  = chan<bool>();
       auto t = std::thread{[&]() {
-        std::optional<int> v;
+        std::optional<long> v;
         v << c;
         done << (v.has_value() == false);
       }};
@@ -124,14 +124,14 @@ TEST_CASE("Test channels", "[chan]") {
     {
       // Send 100 integers,
       // ensure that we receive them non-corrupted in FIFO order
-      auto c = chan<int>{cap};
+      auto c = chan<long>{cap};
       auto t = std::thread([&]() {
-        for (int i = 0; i < 100; ++i) {
+        for (long i = 0; i < 100; ++i) {
           c << i;
         }
       });
-      for (int i = 0; i < 100; ++i) {
-        int v;
+      for (long i = 0; i < 100; ++i) {
+        long v;
         v << c;
         REQUIRE(v == i);
       }
@@ -139,12 +139,12 @@ TEST_CASE("Test channels", "[chan]") {
 
       // Same, but using recv2
       t = std::thread([&]() {
-        for (int i = 0; i < 100; ++i) {
+        for (long i = 0; i < 100; ++i) {
           c << i;
         }
       });
-      for (int i = 0; i < 100; ++i) {
-        std::optional<int> v;
+      for (long i = 0; i < 100; ++i) {
+        std::optional<long> v;
         v << c;
         REQUIRE(v.has_value());
         REQUIRE(v == i);
@@ -153,31 +153,31 @@ TEST_CASE("Test channels", "[chan]") {
 
       // Send 1000 integers in 4 threads,
       // ensure that we receive what we send
-      int const P = 4;
-      int const L = 1000;
+      long const P = 4;
+      long const L = 1000;
       std::vector<std::thread> threads;
-      for (int p = 0; p < P; ++p) {
+      for (long p = 0; p < P; ++p) {
         threads.emplace_back([&]() {
-          for (int i = 0; i < L; ++i) {
+          for (long i = 0; i < L; ++i) {
             c << i;
           }
         });
       }
-      auto done = chan<std::map<int, int>>{};
-      for (int p = 0; p < P; ++p) {
+      auto done = chan<std::map<long, long>>{};
+      for (long p = 0; p < P; ++p) {
         threads.emplace_back([&]() {
-          auto recv = std::map<int, int>{};
-          for (int i = 0; i < L; ++i) {
-            int v;
+          auto recv = std::map<long, long>{};
+          for (long i = 0; i < L; ++i) {
+            long v;
             v << c;
             recv[v] = recv[v] + 1;
           }
           done << std::move(recv);
         });
       }
-      auto recv = std::map<int, int>{};
-      for (int p = 0; p < P; ++p) {
-        auto value = std::map<int, int>{};
+      auto recv = std::map<long, long>{};
+      for (long p = 0; p < P; ++p) {
+        auto value = std::map<long, long>{};
         value << done;
         for (auto [k, v] : value) {
           recv[k] = recv[k] + v;
@@ -194,10 +194,10 @@ TEST_CASE("Test channels", "[chan]") {
 
     {
       // Test len/cap
-      auto c = chan<int>{cap};
+      auto c = chan<long>{cap};
       REQUIRE(c.len() == 0);
       REQUIRE(c.cap() == cap);
-      for (int i = 0; i < static_cast<int>(cap); ++i) {
+      for (long i = 0; i < static_cast<long>(cap); ++i) {
         c << i;
       }
       REQUIRE(c.len() == cap);
@@ -208,12 +208,12 @@ TEST_CASE("Test channels", "[chan]") {
 
 TEST_CASE("Non-blocking receive race", "[chan]") {
   std::atomic_int failures = 0;
-  int n = 1000;
-  for (int i = 0; i < n; ++i) {
-    auto c = chan<int>{1};
-    c << 1;
+  long n = 1000;
+  for (long i = 0; i < n; ++i) {
+    auto c = chan<long>{1};
+    c << 1l;
     auto t = std::thread{[&]() {
-      std::optional<int> v;
+      std::optional<long> v;
       switch (select(
         recv_select_case(c, v),
         default_select_case()
@@ -226,7 +226,7 @@ TEST_CASE("Non-blocking receive race", "[chan]") {
       }
     }};
     c.close();
-    int v;
+    long v;
     v << c;
     REQUIRE(failures == 0);
     t.join();
@@ -234,14 +234,14 @@ TEST_CASE("Non-blocking receive race", "[chan]") {
 }
 
 TEST_CASE("Non-blocking select race2", "[chan]") {
-  int n = 1000;
+  long n = 1000;
   auto done = chan<bool>{1};
-  for (int i = 0; i < n; ++i) {
-    auto c1 = chan<int>{1};
-    auto c2 = chan<int>{};
-    c1 << 1;
+  for (long i = 0; i < n; ++i) {
+    auto c1 = chan<long>{1};
+    auto c2 = chan<long>{};
+    c1 << 1l;
     auto t = std::thread{[&]() {
-      std::optional<int> v1, v2;
+      std::optional<long> v1, v2;
       switch (select(
         recv_select_case(c1, v1),
         recv_select_case(c2, v2),
@@ -257,7 +257,7 @@ TEST_CASE("Non-blocking select race2", "[chan]") {
       done << true;
     }};
     c2.close();
-    std::optional<int> v;
+    std::optional<long> v;
     switch (select(
       recv_select_case(c1, v),
       default_select_case()
@@ -277,13 +277,13 @@ TEST_CASE("Self select", "[chan]") {
   for (size_t cap : std::vector<size_t>{0, 10}) {
     std::atomic_bool error = false;
     auto threads = std::vector<std::thread>{};
-    auto c = chan<int>{cap};
-    for (int p = 0; p < 2; ++p) {
+    auto c = chan<long>{cap};
+    for (long p = 0; p < 2; ++p) {
       threads.emplace_back([&, cap, p]() {
         for (auto i = 0; i < 10; ++i) {
           if ((p == 0) || (i%2 == 0)) {
-            int v0 = p;
-            std::optional<int> v1;
+            long v0 = p;
+            std::optional<long> v1;
             switch (select(
               send_select_case(c, std::move(v0)),
               recv_select_case(c, v1)
@@ -298,8 +298,8 @@ TEST_CASE("Self select", "[chan]") {
               break;
             }
           } else {
-            std::optional<int> v0;
-            int v1 = p;
+            std::optional<long> v0;
+            long v1 = p;
             switch (select(
               recv_select_case(c, v0),
               send_select_case(c, std::move(v1))
@@ -326,36 +326,36 @@ TEST_CASE("Self select", "[chan]") {
 
 TEST_CASE("Select stress", "[chan]") {
   std::vector<std::thread> threads;
-  auto c = std::array<chan<int>, 4>{
-    chan<int>{},
-    chan<int>{},
-    chan<int>{2},
-    chan<int>{3}
+  auto c = std::array<chan<long>, 4>{
+    chan<long>{},
+    chan<long>{},
+    chan<long>{2},
+    chan<long>{3}
   };
-  int N = 10000;
-  for (int k = 0; k < 4; ++k) {
+  long N = 10000;
+  for (long k = 0; k < 4; ++k) {
     threads.emplace_back([&, N, k]() {
-      for (int i = 0; i < N; ++i) {
-        c[k] << 0;
+      for (long i = 0; i < N; ++i) {
+        c[k] << 0l;
       }
     });
     threads.emplace_back([&, N, k]() {
-      for (int i = 0; i < N; ++i) {
-        int v;
+      for (long i = 0; i < N; ++i) {
+        long v;
         v << c[k];
       }
     });
   }
   threads.emplace_back([&, N]() {
-    int n[4]{0};
-    int v0 = 0, v1 = 0, v2 = 0, v3 = 0;
+    long n[4]{0};
+    long v0 = 0, v1 = 0, v2 = 0, v3 = 0;
     select_case cases[] = {
       send_select_case(c[3], std::move(v3)),
       send_select_case(c[2], std::move(v2)),
       send_select_case(c[0], std::move(v0)),
       send_select_case(c[1], std::move(v1)),
     };
-    for (int i = 0; i < 4*N; ++i) {
+    for (long i = 0; i < 4*N; ++i) {
       switch (select(cases)) {
       case 0:
         ++n[3];
@@ -393,15 +393,15 @@ TEST_CASE("Select stress", "[chan]") {
     }
   });
   threads.emplace_back([&, N]() {
-    int n[4]{0};
-    std::optional<int> v0 = 0, v1 = 0, v2 = 0, v3 = 0;
+    long n[4]{0};
+    std::optional<long> v0 = 0, v1 = 0, v2 = 0, v3 = 0;
     select_case cases[] = {
       recv_select_case(c[0], v0),
       recv_select_case(c[1], v1),
       recv_select_case(c[2], v2),
       recv_select_case(c[3], v3),
     };
-    for (int i = 0; i < 4*N; ++i) {
+    for (long i = 0; i < 4*N; ++i) {
       switch (select(cases)) {
       case 0:
         ++n[0];
@@ -437,20 +437,20 @@ TEST_CASE("Select stress", "[chan]") {
 }
 
 TEST_CASE("Select fairness", "[chan]") {
-  int const trials = 10000;
-  auto c1 = chan<int>{trials + 1};
-  auto c2 = chan<int>{trials + 1};
-  for (int i = 0; i < trials; ++i) {
-    c1 << 1;
-    c2 << 2;
+  long const trials = 10000;
+  auto c1 = chan<long>{trials + 1};
+  auto c2 = chan<long>{trials + 1};
+  for (long i = 0; i < trials; ++i) {
+    c1 << 1l;
+    c2 << 2l;
   }
-  auto c3 = chan<int>{};
-  auto c4 = chan<int>{};
-  auto out = chan<int>{};
-  auto done = chan<int>{};
+  auto c3 = chan<long>{};
+  auto c4 = chan<long>{};
+  auto out = chan<long>{};
+  auto done = chan<long>{};
   auto t = std::thread{[&]() {
     while (true) {
-      std::optional<int> b;
+      std::optional<long> b;
       switch (select(
         recv_select_case(c3, b),
         recv_select_case(c4, b),
@@ -460,7 +460,7 @@ TEST_CASE("Select fairness", "[chan]") {
       default:
         break;
       }
-      std::optional<int> d;
+      std::optional<long> d;
       switch (select(
         send_select_case(out, std::move(b.value())),
         recv_select_case(done, d)
@@ -472,9 +472,9 @@ TEST_CASE("Select fairness", "[chan]") {
       }
     }
   }};
-  int cnt1 = 0, cnt2 = 0;
-  for (int i = 0; i < trials; ++i) {
-    int b;
+  long cnt1 = 0, cnt2 = 0;
+  for (long i = 0; i < trials; ++i) {
+    long b;
     b << out;
     switch (b) {
     case 1:
@@ -503,8 +503,8 @@ TEST_CASE("Select fairness", "[chan]") {
 TEST_CASE("Pseudo-random send", "[chan]") {
   size_t n = 100;
   for (size_t cap : std::vector<size_t>{0, n}) {
-    auto c = chan<int>{cap};
-    auto l = std::vector<int>{};
+    auto c = chan<long>{cap};
+    auto l = std::vector<long>{};
     l.resize(n, 0);
     auto t = std::thread{[&]() {
       for (size_t i = 0; i < n; ++i) {
@@ -513,7 +513,7 @@ TEST_CASE("Pseudo-random send", "[chan]") {
       }
     }};
     for (size_t i = 0; i < n; ++i) {
-      int b0 = 0, b1 = 1;
+      long b0 = 0, b1 = 1;
       switch (select(
         send_select_case(c, std::move(b1)),
         send_select_case(c, std::move(b0))
@@ -523,12 +523,12 @@ TEST_CASE("Pseudo-random send", "[chan]") {
       }
     }
     t.join();
-    int n0 = 0, n1 = 0;
+    long n0 = 0, n1 = 0;
     for (auto i : l) {
       n0 += (i + 1) % 2;
       n1 += i;
     }
-    if (n0 <= (int)n/10 || n1 <= (int)n/10) {
+    if (n0 <= (long)n/10 || n1 <= (long)n/10) {
       CAPTURE(n0, n1, cap);
       FAIL_CHECK("wanted pseudo-random");
     }
@@ -537,15 +537,15 @@ TEST_CASE("Pseudo-random send", "[chan]") {
 }
 
 TEST_CASE("Multi-consumer", "[chan]") {
-  int const nwork = 23;
-  int const niter = 271828;
-  auto const pn = std::vector<int>{2, 3, 7, 11, 13, 17, 19, 23, 27, 31};
-  auto q = chan<int>{nwork * 3};
-  auto r = chan<int>{nwork * 3};
+  long const nwork = 23;
+  long const niter = 271828;
+  auto const pn = std::vector<long>{2, 3, 7, 11, 13, 17, 19, 23, 27, 31};
+  auto q = chan<long>{nwork * 3};
+  auto r = chan<long>{nwork * 3};
 
   // Workers
   auto workers = std::vector<std::thread>{};
-  for (int i = 0; i < nwork; ++i) {
+  for (long i = 0; i < nwork; ++i) {
     workers.emplace_back([&, i]() {
       for (auto v : q) {
         if (pn[i % pn.size()] == v) {
@@ -557,10 +557,10 @@ TEST_CASE("Multi-consumer", "[chan]") {
   }
 
   // Feeder & closer
-  int expect = 0;
+  long expect = 0;
   auto t = std::thread{[&]() {
-    for (int i = 0; i < niter; ++i) {
-      int v = pn[i % pn.size()];
+    for (long i = 0; i < niter; ++i) {
+      long v = pn[i % pn.size()];
       expect += v;
       q << v;
     }
@@ -572,8 +572,8 @@ TEST_CASE("Multi-consumer", "[chan]") {
   }};
 
   // Consume & check
-  int n = 0;
-  int s = 0;
+  long n = 0;
+  long s = 0;
   for (auto v : r) {
     ++n;
     s += v;
@@ -584,12 +584,12 @@ TEST_CASE("Multi-consumer", "[chan]") {
 }
 
 TEST_CASE("Select duplicate channel", "[chan]") {
-  auto c = chan<int>{};
-  auto d = chan<int>{};
-  auto e = chan<int>{};
+  auto c = chan<long>{};
+  auto d = chan<long>{};
+  auto e = chan<long>{};
 
   auto t1 = std::thread{[&]() {
-    std::optional<int> v;
+    std::optional<long> v;
     switch (select(
       recv_select_case(c, v),
       recv_select_case(c, v),
@@ -598,20 +598,20 @@ TEST_CASE("Select duplicate channel", "[chan]") {
     default:
       break;
     }
-    e << 9;
+    e << 9l;
   }};
   std::this_thread::sleep_for(1ms);
 
   auto t2 = std::thread{[&]() {
-    int v;
+    long v;
     v << c;
   }};
   std::this_thread::sleep_for(1ms);
 
-  int v;
-  d << 7;  // Wakes up t1
-  v << e;  // Tells us t1 is done
-  c << 8;  // Wakes up t2
+  long v;
+  d << 7l;  // Wakes up t1
+  v << e;   // Tells us t1 is done
+  c << 8l;  // Wakes up t2
 
   t1.join();
   t2.join();
@@ -624,8 +624,8 @@ TEST_CASE("Channel benchmarks", "[!benchmark]") {
     auto c = chan<std::byte>{8};
   };
 
-  BENCHMARK("Construct int") {
-    auto c = chan<int>{8};
+  BENCHMARK("Construct long") {
+    auto c = chan<long>{8};
   };
 
   BENCHMARK("Construct std::byte*") {
@@ -649,9 +649,9 @@ TEST_CASE("Channel benchmarks", "[!benchmark]") {
   };
 
   BENCHMARK_ADVANCED("Non-blocking select")(Catch::Benchmark::Chronometer meter) {
-    auto c = chan<int>{};
+    auto c = chan<long>{};
     meter.measure([&]() {
-      std::optional<int> v;
+      std::optional<long> v;
       switch (select(
         recv_select_case(c, v),
         default_select_case()
@@ -663,34 +663,34 @@ TEST_CASE("Channel benchmarks", "[!benchmark]") {
   };
 
   BENCHMARK_ADVANCED("Uncontended select")(Catch::Benchmark::Chronometer meter) {
-    auto c1 = chan<int>{1};
-    auto c2 = chan<int>{1};
-    c1 << 0;
+    auto c1 = chan<long>{1};
+    auto c2 = chan<long>{1};
+    c1 << 0l;
     meter.measure([&]() {
-      std::optional<int> v;
+      std::optional<long> v;
       switch (select(
         recv_select_case(c1, v),
         recv_select_case(c2, v)
       )) {
       case 0:
-        c2 << 0;
+        c2 << 0l;
         break;
       case 1:
-        c1 << 0;
+        c1 << 0l;
         break;
       }
     });
   };
 
   BENCHMARK_ADVANCED("Contended synchronous select")(Catch::Benchmark::Chronometer meter) {
-    auto c1 = chan<int>{};
-    auto c2 = chan<int>{};
-    auto c3 = chan<int>{};
-    auto done = chan<int>{};
+    auto c1 = chan<long>{};
+    auto c2 = chan<long>{};
+    auto c3 = chan<long>{};
+    auto done = chan<long>{};
     auto t = std::thread([&]() {
       while (true) {
-        int v1 = 0, v2 = 0, v3 = 0;
-        std::optional<int> d;
+        long v1 = 0, v2 = 0, v3 = 0;
+        std::optional<long> d;
         switch (select(
           send_select_case(c1, std::move(v1)),
           send_select_case(c2, std::move(v2)),
@@ -707,7 +707,7 @@ TEST_CASE("Channel benchmarks", "[!benchmark]") {
       }
     });
     meter.measure([&]() {
-      std::optional<int> v;
+      std::optional<long> v;
       switch (select(
         recv_select_case(c1, v),
         recv_select_case(c2, v),
@@ -723,33 +723,33 @@ TEST_CASE("Channel benchmarks", "[!benchmark]") {
 
   BENCHMARK_ADVANCED("Contended asynchronous select")(Catch::Benchmark::Chronometer meter) {
     auto n = std::thread::hardware_concurrency();
-    auto c1 = chan<int>{n};
-    auto c2 = chan<int>{n};
-    c1 << 0;
+    auto c1 = chan<long>{n};
+    auto c2 = chan<long>{n};
+    c1 << 0l;
     meter.measure([&]() {
-      std::optional<int> v;
+      std::optional<long> v;
       switch (select(
         recv_select_case(c1, v),
         recv_select_case(c2, v)
       )) {
       case 0:
-        c2 << 0;
+        c2 << 0l;
         break;
       case 1:
-        c1 << 0;
+        c1 << 0l;
         break;
       }
     });
   };
 
   BENCHMARK_ADVANCED("Multiple non-blocking select")(Catch::Benchmark::Chronometer meter) {
-    auto c1 = chan<int>{};
-    auto c2 = chan<int>{};
-    auto c3 = chan<int>{1};
-    auto c4 = chan<int>{1};
+    auto c1 = chan<long>{};
+    auto c2 = chan<long>{};
+    auto c3 = chan<long>{1};
+    auto c4 = chan<long>{1};
     meter.measure([&]() {
-      int send1 = 0, send2 = 0;
-      std::optional<int> recv;
+      long send1 = 0, send2 = 0;
+      std::optional<long> recv;
       switch (select(
         recv_select_case(c1, recv),
         default_select_case()
@@ -782,14 +782,14 @@ TEST_CASE("Channel benchmarks", "[!benchmark]") {
   };
 
   BENCHMARK_ADVANCED("Uncontended")(Catch::Benchmark::Chronometer meter) {
-    int const n = 100;
-    auto c = chan<int>{n};
+    long const n = 100;
+    auto c = chan<long>{n};
     meter.measure([&]() {
-      for (int i = 0; i < n; ++i) {
-        c << 0;
+      for (long i = 0; i < n; ++i) {
+        c << 0l;
       }
-      int v;
-      for (int i = 0; i < n; ++i) {
+      long v;
+      for (long i = 0; i < n; ++i) {
         v << c;
       }
     });
@@ -805,14 +805,14 @@ TEST_CASE("Channel benchmarks", "[!benchmark]") {
   };
 
   BENCHMARK_ADVANCED("Popular")(Catch::Benchmark::Chronometer meter) {
-    int const n = 1000;
+    long const n = 1000;
     auto c = chan<bool>{};
     auto done = chan<bool>{};
 
     auto channels = std::vector<std::unique_ptr<chan<bool>>>{};
     auto threads = std::vector<std::thread>{};
 
-    for (int i = 0; i < n; ++i) {
+    for (long i = 0; i < n; ++i) {
       channels.push_back(std::make_unique<chan<bool>>());
       threads.emplace_back([&](chan<bool>* d) {
         while (true) {
@@ -832,9 +832,9 @@ TEST_CASE("Channel benchmarks", "[!benchmark]") {
       }, channels[i].get());
     }
 
-    meter.measure([&](int n) {
+    meter.measure([&](long n) {
       auto m = (n+1) * 10;
-      for (int i = 0; i < m; ++i) {
+      for (long i = 0; i < m; ++i) {
         for (auto& d : channels) {
           *d << true;
         }

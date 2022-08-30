@@ -159,7 +159,7 @@ constexpr auto last_index(std::string_view s, std::string_view substr) -> std::s
   if (h == hashss && s.substr(last) == substr) {
     return last;
   }
-  for (auto i = static_cast<int>(last) - 1; i >= 0; --i) {
+  for (auto i = static_cast<long>(last) - 1; i >= 0; --i) {
     h *= bongo::detail::bytealg::prime_rk;
     h += static_cast<uint32_t>(s[i]);
     h -= pow * static_cast<uint32_t>(s[i+substr.size()]);
@@ -196,7 +196,7 @@ constexpr auto last_index_any(std::string_view s, std::string_view chars) -> std
   }
   if (s.size() > 8) {
     if (auto [as, is_ascii] = detail::make_ascii_set(chars); is_ascii) {
-      for (int i = s.size() - 1; i >= 0; --i) {
+      for (long i = s.size() - 1; i >= 0; --i) {
         if (as.contains(s[i])) {
           return i;
         }
@@ -209,7 +209,7 @@ constexpr auto last_index_any(std::string_view s, std::string_view chars) -> std
     if (r >= utf8::rune_self) {
       r = utf8::rune_error;
     }
-    for (int i = s.size(); i > 0;) {
+    for (long i = s.size(); i > 0;) {
       auto [rc, size] = utf8::decode_last(s.substr(0, i));
       i -= size;
       if (rc == r) {
@@ -218,7 +218,7 @@ constexpr auto last_index_any(std::string_view s, std::string_view chars) -> std
     }
     return std::string_view::npos;
   }
-  for (int i = s.size(); i > 0;) {
+  for (long i = s.size(); i > 0;) {
     auto [r, size] = utf8::decode_last(s.substr(0, i));
     i -= size;
     if (index(chars, r) != std::string_view::npos) {
@@ -233,4 +233,4 @@ constexpr auto contains(std::string_view s, T substr) -> bool {
   return index(s, substr) != std::string_view::npos;
 }
 
-}  // namesapce bongo::strings
+}  // namespace bongo::strings

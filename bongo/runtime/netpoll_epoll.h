@@ -24,10 +24,10 @@ class netpoll {
     ::close(epfd_);
   }
 
-  int close(uintptr_t fd) {
+  long close(uintptr_t fd) {
     auto ev = epoll_event{};
     return -epoll_ctl(epfd_, EPOLL_CTL_DEL, static_cast<int>(fd), &ev);
   }
 };
 
-}  // namesapce bongo::runtime
+}  // namespace bongo::runtime

@@ -44,7 +44,7 @@ class file {
 std::pair<file, std::error_code> make_file(uintptr_t fd, std::string&& name);
 std::pair<file, std::error_code> make_file(uintptr_t fd, std::string const& name);
 
-std::pair<file, std::error_code> open_file_nolog(std::string&& name, int flag, file_mode perm);
-std::pair<file, std::error_code> open_file_nolog(std::string const& name, int flag, file_mode perm);
+std::pair<file, std::error_code> open_file_nolog(std::string&& name, long flag, file_mode perm);
+std::pair<file, std::error_code> open_file_nolog(std::string const& name, long flag, file_mode perm);
 
 }  // namespace bongo::os

@@ -33,19 +33,19 @@ constexpr auto trim_prefix(std::string_view s, std::string_view prefix) -> std::
 
 constexpr auto trim_suffix(std::string_view s, std::string_view suffix) -> std::string_view;
 
-auto split(std::string_view s, std::string_view sep, int n) -> std::vector<std::string_view>;
+auto split(std::string_view s, std::string_view sep, long n) -> std::vector<std::string_view>;
 
-auto split_after(std::string_view s, std::string_view sep, int n) -> std::vector<std::string_view>;
+auto split_after(std::string_view s, std::string_view sep, long n) -> std::vector<std::string_view>;
 
 auto split(std::string_view s, std::string_view sep) -> std::vector<std::string_view>;
 
 auto split_after(std::string_view s, std::string_view sep) -> std::vector<std::string_view>;
 
-auto join(std::span<std::string_view> e, std::string_view sep) -> std::string;
+auto join(std::span<std::string_view const> e, std::string_view sep) -> std::string;
 
 // Counts the number of non-overlapping instances of substr in s. If substr is
 // an empty string, Count returns 1 + the number of Unicode code points in s.
-constexpr auto count(std::string_view s, std::string_view substr) -> int;
+constexpr auto count(std::string_view s, std::string_view substr) -> long;
 
 // Tests whether the string s begins with prefix.
 constexpr auto has_prefix(std::string_view s, std::string_view prefix) -> bool;
@@ -61,7 +61,7 @@ auto to_valid_utf8(std::string_view s, std::string_view replacement) -> std::str
 // Repeat returns a new string consisting of count copies of the string s.
 auto repeat(std::string_view s, size_t count) -> std::string;
 
-auto replace(std::string_view s, std::string_view old_s, std::string_view new_s, int n) -> std::string;
+auto replace(std::string_view s, std::string_view old_s, std::string_view new_s, long n) -> std::string;
 
 auto replace(std::string_view s, std::string_view old_s, std::string_view new_s) -> std::string;
 
@@ -145,12 +145,12 @@ constexpr auto trim_suffix(std::string_view s, std::string_view suffix) -> std::
   return s;
 }
 
-constexpr auto count(std::string_view s, std::string_view substr) -> int {
+constexpr auto count(std::string_view s, std::string_view substr) -> long {
   namespace utf8 = unicode::utf8;
   if (substr.size() == 0) {
     return utf8::count(std::begin(s), std::end(s)) + 1;
   } else if (substr.size() == 1) {
-    int n = 0;
+    long n = 0;
     for (auto c : s) {
       if (c == substr[0]) {
         ++n;
@@ -158,7 +158,7 @@ constexpr auto count(std::string_view s, std::string_view substr) -> int {
     }
     return n;
   }
-  int n = 0;
+  long n = 0;
   for (;;) {
     auto i = index(s, substr);
     if (i == std::string_view::npos) {
@@ -188,7 +188,7 @@ auto map(T&& mapping, std::string_view s) -> std::string {
       continue;
     }
 
-    int width = 0;
+    long width = 0;
     if (c == utf8::rune_error) {
       std::tie(c, width) = utf8::decode(s.substr(i));
       if (width != 1 && r == c) {
@@ -234,4 +234,4 @@ constexpr auto cut(std::string_view s, std::string_view sep) -> std::tuple<std::
   return {s, "", false};
 }
 
-}  // namesapce bongo::strings
+}  // namespace bongo::strings

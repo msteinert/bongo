@@ -16,13 +16,13 @@
 
 namespace bongo::crypto::sha1 {
 
-constexpr static int const size = 20;
-constexpr static int const block_size = 64;
+constexpr static long const size = 20;
+constexpr static long const block_size = 64;
 
 class hash {
   uint32_t h_[5] = {detail::init0, detail::init1, detail::init2, detail::init3, detail::init4};
   uint8_t x_[detail::chunk];
-  int nx_ = 0;
+  long nx_ = 0;
   uint64_t len_ = 0;
 
  public:
@@ -30,7 +30,7 @@ class hash {
   size_t size() const noexcept;
   size_t block_size() const noexcept;
   void reset() noexcept;
-  std::pair<int, std::error_code> write(std::span<uint8_t const> p);
+  std::pair<long, std::error_code> write(std::span<uint8_t const> p);
 
   std::vector<uint8_t> sum();
   std::span<uint8_t> sum(std::span<uint8_t> digest);

@@ -24,7 +24,7 @@ enum class new_file_kind {
 };
 
 std::pair<file, std::error_code> make_file(uintptr_t fd, std::string&& name, new_file_kind kind, bool append_mode = false) {
-  auto fdi = static_cast<int>(fd);
+  auto fdi = static_cast<long>(fd);
   if (fdi < 0) {
     return {file{}, std::make_error_code(std::errc::invalid_argument)};
   }
@@ -54,7 +54,7 @@ std::error_code ignoring_interrupted(Fn fn) {
 }
 
 std::string_view basename(std::string_view name) {
-  int i = name.size() - 1;
+  long i = name.size() - 1;
   // Remove trailing slashes
   for (; i > 0 && name[i] == '/'; --i) {
     name = name.substr(0, i);
@@ -119,7 +119,7 @@ std::pair<file_info, std::error_code> file::stat() {
 
 std::pair<file, std::error_code> make_file(uintptr_t fd, std::string&& name) {
   auto kind = new_file_kind::new_file;
-  if (auto [nb, err] = detail::syscall::unix::is_nonblock(static_cast<int>(fd));
+  if (auto [nb, err] = detail::syscall::unix::is_nonblock(static_cast<long>(fd));
       err == nil && nb) {
     kind = new_file_kind::non_block;
   }
@@ -130,8 +130,8 @@ std::pair<file, std::error_code> make_file(uintptr_t fd, std::string const& name
   return make_file(fd, std::string{name});
 }
 
-std::pair<file, std::error_code> open_file_nolog(std::string&& name, int flag, file_mode perm) {
-  int r;
+std::pair<file, std::error_code> open_file_nolog(std::string&& name, long flag, file_mode perm) {
+  long r;
   for (;;) {
     std::error_code e;
     std::tie(r, e) = syscall::open(name, flag, perm);
@@ -150,7 +150,7 @@ std::pair<file, std::error_code> open_file_nolog(std::string&& name, int flag, f
       (flag&o_append) != 0);
 }
 
-std::pair<file, std::error_code> open_file_nolog(std::string const& name, int flag, file_mode perm) {
+std::pair<file, std::error_code> open_file_nolog(std::string const& name, long flag, file_mode perm) {
   return open_file_nolog(std::string{name}, flag, perm);
 }
 

@@ -50,4 +50,4 @@ class range {
   { return unicode::utf8::iterator{end_, begin_, end_}; }
 };
 
-}  // namesapce bongo::unicode::utf8
+}  // namespace bongo::unicode::utf8

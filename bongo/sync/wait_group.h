@@ -15,17 +15,17 @@ namespace bongo::sync {
 class wait_group {
   std::mutex mutex_;
   std::condition_variable cond_;
-  int state_;
+  long state_;
 
  public:
   wait_group()
       : wait_group{0} {}
-  wait_group(int n)
+  wait_group(long n)
       : state_{n} {}
 
-  void add(int n);
+  void add(long n);
   void done();
   void wait();
 };
 
-}  // namesapce bongo::sync
+}  // namespace bongo::sync

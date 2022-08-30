@@ -12,9 +12,9 @@ struct error_category : std::error_category {
   std::string message(int e) const {
     switch (static_cast<error>(e)) {
     case error::unread_byte:
-      return "bytes::buffer: unread_byte: previous operation was not a successful read";
+      return "unread_byte: previous operation was not a successful read";
     case error::unread_rune:
-      return "bytes::buffer: unread_rune: previous operation was not a successful read_rune";
+      return "unread_rune: previous operation was not a successful read_rune";
     case error::at_beginning:
       return "at beginning of span";
     case error::prev_read_rune:

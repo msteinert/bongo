@@ -14,19 +14,19 @@ namespace bongo::fmt {
 // Width returns the value of the width option and whether it has been set.
 template <typename T>
 concept Width = requires (T v) {
-  { v.width() } -> std::same_as<std::pair<int, bool>>;
+  { v.width() } -> std::same_as<std::pair<long, bool>>;
 };
 
 // Precision returns the value fo the precision option and whether it has been
 // set.
 template <typename T>
 concept Precision = requires (T v) {
-  { v.precision() } -> std::same_as<std::pair<int, bool>>;
+  { v.precision() } -> std::same_as<std::pair<long, bool>>;
 };
 
 // Flag reports whether the flag c, a character, has been set.
 template <typename T>
-concept Flag = requires (T v, int c) {
+concept Flag = requires (T v, long c) {
   { v.flag(c) } -> std::same_as<bool>;
 };
 

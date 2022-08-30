@@ -35,8 +35,8 @@ void sellock(select_case const* cases, size_t* lockorder, size_t n) noexcept {
   }
 }
 
-void selunlock(select_case const* cases, size_t* lockorder, int n) noexcept {
-  for (int i = n - 1; i >= 0; --i) {
+void selunlock(select_case const* cases, size_t* lockorder, long n) noexcept {
+  for (long i = n - 1; i >= 0; --i) {
     auto* c = cases[lockorder[i]].chan;
     if (i > 0 && c == cases[lockorder[i - 1]].chan) {
       continue;  // Unlock on next iteration

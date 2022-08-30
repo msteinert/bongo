@@ -19,8 +19,8 @@ TEST_CASE("Byte reader", "[bytes]") {
   auto r = reader{to_bytes("0123456789"sv)};
   auto test_cases = std::vector<std::tuple<
     int64_t,          // seek offset
-    int,              // seek set
-    int,              // read buffer size
+    long,             // seek set
+    long,             // read buffer size
     std::string,      // expected read result
     int64_t,          // expected seek return value
     std::error_code,  // expected read error
@@ -107,7 +107,7 @@ TEST_CASE("Byte reader zero", "[bytes]") {
   CHECK(reader{}.size() == 0);
   CHECK(reader{}.total_size() == 0);
 
-  int n;
+  long n;
   std::error_code err;
   std::tie(n, err)  = reader{}.read(nil);
   CHECK(n == 0);
@@ -128,7 +128,7 @@ TEST_CASE("Byte reader zero", "[bytes]") {
   CHECK(err == io::eof);
 
   rune ch;
-  int size;
+  long size;
   std::tie(ch, size, err) = reader{}.read_rune();
   CHECK(ch == 0);
   CHECK(size == 0);

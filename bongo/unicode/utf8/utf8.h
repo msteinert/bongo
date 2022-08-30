@@ -4,6 +4,7 @@
 
 #include <array>
 #include <iterator>
+#include <span>
 #include <string>
 #include <string_view>
 
@@ -111,7 +112,7 @@ constexpr bool full_rune(InputIt begin, InputIt end) noexcept {
     return false;
   }
   auto x = first[to_byte(begin)];
-  if (n >= static_cast<int>(x&7)) {
+  if (n >= static_cast<long>(x&7)) {
     return true;
   }
   auto accept = accept_ranges[x>>4];
@@ -121,6 +122,14 @@ constexpr bool full_rune(InputIt begin, InputIt end) noexcept {
     return true;
   }
   return false;
+}
+
+constexpr auto full_rune(std::span<uint8_t const> p) noexcept -> bool {
+  return full_rune(p.begin(), p.end());
+}
+
+constexpr auto full_rune(std::string_view s) noexcept -> bool {
+  return full_rune(s.begin(), s.end());
 }
 
 // Write the UTF-8 encoding of a rune.
@@ -149,6 +158,10 @@ constexpr OutputIt encode(rune r, OutputIt out) noexcept {
   return out;
 }
 
+constexpr auto encode(std::span<uint8_t> p, rune r) noexcept -> long {
+  return std::distance(p.begin(), encode(r, p.begin()));
+}
+
 inline std::string encode(rune r) {
   auto s = std::string{};
   encode(r, std::back_inserter(s));
@@ -169,7 +182,7 @@ constexpr std::pair<rune, size_t> decode(InputIt begin, InputIt end) noexcept {
     auto mask = to_rune(x) << 31 >> 31;
     return {(to_rune(b0)&~mask) | (rune_error&mask), 1};
   }
-  auto sz = static_cast<int>(x&7);
+  auto sz = static_cast<long>(x&7);
   auto accept = accept_ranges[x>>4];
   if (n < sz) {
     return {rune_error, 1};
@@ -195,7 +208,11 @@ constexpr std::pair<rune, size_t> decode(InputIt begin, InputIt end) noexcept {
   return {to_rune(b0&mask4)<<18 | to_rune(b1&maskx)<<12 | to_rune(b2&maskx)<<6 | to_rune(b3&maskx), 4};
 }
 
-constexpr std::pair<rune, size_t> decode(std::string_view s) noexcept {
+constexpr auto decode(std::span<uint8_t const> p) noexcept -> std::pair<rune, size_t> {
+  return decode(p.begin(), p.end());
+}
+
+constexpr auto  decode(std::string_view s) noexcept -> std::pair<rune, size_t> {
   return decode(s.begin(), s.end());
 }
 
@@ -252,7 +269,7 @@ constexpr size_t count(InputIt begin, InputIt end) noexcept {
       it = std::next(it);  // invalid.
       continue;
     }
-    auto size = static_cast<int>(x & 7);
+    auto size = static_cast<long>(x & 7);
     if (std::next(it, size) > end) {
       it = std::next(it); // short or invalid.
       continue;
@@ -272,8 +289,16 @@ constexpr size_t count(InputIt begin, InputIt end) noexcept {
   return n;
 }
 
+constexpr auto count(std::span<uint8_t const> p) noexcept -> size_t {
+  return count(p.begin(), p.end());
+}
+
+constexpr auto count(std::string_view s) noexcept -> size_t {
+  return count(s.begin(), s.end());
+}
+
 // Returns the number of bytes required to encode a rune.
-constexpr int len(rune r) noexcept {
+constexpr long len(rune r) noexcept {
   if (r < 0) {
     return -1;
   } else if (r <= rune1_max) {
@@ -331,7 +356,7 @@ constexpr bool valid(InputIt begin, InputIt end) noexcept {
     if (x == xx) {
       return false;  // Illegal starter byte.
     }
-    auto size = static_cast<int>(x & 7);
+    auto size = static_cast<long>(x & 7);
     if (std::next(it, size) > end) {
       return false;  // Short or invalid.
     }
@@ -350,4 +375,12 @@ constexpr bool valid(InputIt begin, InputIt end) noexcept {
   return true;
 }
 
-}  // namesapce bongo::unicode::utf8
+constexpr bool valid(std::span<uint8_t const> p) noexcept {
+  return valid(p.begin(), p.end());
+}
+
+constexpr bool valid(std::string_view s) noexcept {
+  return valid(s.begin(), s.end());
+}
+
+}  // namespace bongo::unicode::utf8

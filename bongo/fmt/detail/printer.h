@@ -46,10 +46,10 @@ class printer {
   printer() = default;
 
   // Implement the State concept.
-  auto width() const -> std::pair<int, bool>;
-  auto precision() const -> std::pair<int, bool>;
-  auto flag(int b) const -> bool;
-  auto write(std::span<uint8_t const> b) -> std::pair<int, std::error_code>;
+  auto width() const -> std::pair<long, bool>;
+  auto precision() const -> std::pair<long, bool>;
+  auto flag(long b) const -> bool;
+  auto write(std::span<uint8_t const> b) -> std::pair<long, std::error_code>;
 
   template <typename... Args>
   auto do_printf(std::string_view format, Args&&... args) -> void;
@@ -68,7 +68,7 @@ class printer {
   auto print_arg(T&& arg, rune verb) -> void;
 
   template <std::input_iterator It>
-  auto arg_number(It it, It end, int arg_num, int num_args) -> std::tuple<int, bool, It>;
+  auto arg_number(It it, It end, long arg_num, long num_args) -> std::tuple<long, bool, It>;
 
   template <typename T>
   auto bad_verb(T&& arg, rune verb) -> void;
@@ -345,7 +345,7 @@ auto printer::print_arg(T&& arg, rune verb) -> void {
 }
 
 template <std::input_iterator It>
-auto printer::arg_number(It it, It end, int arg_num, int num_args) -> std::tuple<int, bool, It> {
+auto printer::arg_number(It it, It end, long arg_num, long num_args) -> std::tuple<long, bool, It> {
   if (it >= end || *it != '[') {
     return {arg_num, false, it};
   }
@@ -454,7 +454,7 @@ auto printer::do_format(T&& arg, rune verb) -> void {
 
 template <Complex T>
 auto printer::do_format(T&& arg, rune verb) -> void {
-  int old_plus;
+  long old_plus;
   switch (verb) {
   case 'v': case 'b': case 'g': case 'G': case 'x': case 'X': case 'f': case 'F': case 'e': case 'E':
     old_plus = fmt_.flags.plus;

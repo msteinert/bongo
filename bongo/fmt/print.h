@@ -16,8 +16,8 @@ namespace bongo::fmt {
 
 // fprintf formats according to a format specifier and writes to w. It returns
 // the number of bytes written and any write error encountered.
-template <io::Writer T, typename... Args>
-auto fprintf(T& w, std::string_view format, Args&&... args) -> std::pair<int, std::error_code> {
+template <typename T, typename... Args> requires io::Writer<T>
+auto fprintf(T& w, std::string_view format, Args&&... args) -> std::pair<long, std::error_code> {
   using io::write;
   auto p = detail::printer{};
   p.do_printf(format, std::forward<Args>(args)...);
@@ -28,7 +28,7 @@ auto fprintf(T& w, std::string_view format, Args&&... args) -> std::pair<int, st
 // output. It returns the number of bytes written and any write error
 // encountered.
 template <typename... Args>
-auto printf(std::string_view format, Args&&... args) -> std::pair<int, std::error_code> {
+auto printf(std::string_view format, Args&&... args) -> std::pair<long, std::error_code> {
   return fprintf(os::stdout, format, std::forward<Args>(args)...);
 }
 
@@ -44,8 +44,8 @@ auto sprintf(std::string_view fmt, Args&&... args) -> std::string {
 // fprint formats using the default formats for its operands and writes to w.
 // Spaces are added between operands when neither is a string. It returns the
 // number of bytes written and any write error encountered.
-template <io::Writer T, typename... Args>
-auto fprint(T& w, Args&&... args) -> std::pair<int, std::error_code> {
+template <typename T, typename... Args> requires io::Writer<T>
+auto fprint(T& w, Args&&... args) -> std::pair<long, std::error_code> {
   using io::write;
   auto p = detail::printer{};
   p.do_print(std::forward<Args>(args)...);
@@ -56,7 +56,7 @@ auto fprint(T& w, Args&&... args) -> std::pair<int, std::error_code> {
 // standard out. Spaces are added between operands when neither is a string.
 // It returns the number of bytes written and any write error encountered.
 template <typename... Args>
-auto print(Args&&... args) -> std::pair<int, std::error_code> {
+auto print(Args&&... args) -> std::pair<long, std::error_code> {
   return fprint(os::stdout, std::forward<Args>(args)...);
 }
 
@@ -76,8 +76,8 @@ auto sprint(Args&&... args) -> std::string {
 // fprintln formats using the default formats for its operands and writes to w.
 // Spaces are always added between operands and a newline is appended. It
 // returns the number of bytes written and any write error encountered.
-template <io::Writer T, typename... Args>
-auto fprintln(T& w, Args&&... args) -> std::pair<int, std::error_code> {
+template <typename T, typename... Args> requires io::Writer<T>
+auto fprintln(T& w, Args&&... args) -> std::pair<long, std::error_code> {
   using io::write;
   auto p = detail::printer{};
   p.do_println(std::forward<Args>(args)...);
@@ -85,11 +85,11 @@ auto fprintln(T& w, Args&&... args) -> std::pair<int, std::error_code> {
 }
 
 // println formats using the default formats for its operands and writes to
-// standard output.  Spaces are always added between operands and a newline is
+// standard output. Spaces are always added between operands and a newline is
 // appended. It returns the number of bytes written and any write error
 // encountered.
 template <typename... Args>
-auto println(Args&&... args) -> std::pair<int, std::error_code> {
+auto println(Args&&... args) -> std::pair<long, std::error_code> {
   return fprintln(os::stdout, std::forward<Args>(args)...);
 }
 

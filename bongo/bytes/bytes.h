@@ -10,6 +10,19 @@
 
 namespace bongo::bytes {
 
+static constexpr size_t npos = static_cast<size_t>(-1);
+
+// index returns the index of the first instance of c in b, or npos if c is not
+// present in b.
+constexpr auto index(std::span<uint8_t const> b, uint8_t c) -> size_t {
+  for (size_t i = 0; i < b.size(); ++i) {
+    if (b[i] == c) {
+      return i;
+    }
+  }
+  return npos;
+}
+
 // compare compares two spans of bytes lexicographically.
 constexpr std::strong_ordering compare(std::span<uint8_t const> a, std::span<uint8_t const> b) noexcept {
   auto l = a.size();
@@ -52,7 +65,7 @@ constexpr bool greater(std::span<uint8_t const> a, std::span<uint8_t const> b) n
 
 // join concatenates the elements of s to create a new std::vector<uint8_t>.
 // The separator sep is placed between elements in the resulting slice.
-inline std::vector<uint8_t> join(std::span<std::span<uint8_t>> s, std::span<uint8_t> sep = {}) {
+inline std::vector<uint8_t> join(std::span<std::span<uint8_t const>> s, std::span<uint8_t const> sep = {}) {
   if (s.size() == 0) {
     return std::vector<uint8_t>{};
   }
@@ -94,8 +107,8 @@ std::string_view to_string(T&& s) {
 
 // to_string creates a std::string_view from contiguous container.
 template <typename T>
-std::string_view to_string(T&& s, std::string_view::size_type size) {
-  return std::string_view{reinterpret_cast<char const*>(std::data(s)), size};
+std::string_view to_string(T&& s, long size) {
+  return std::string_view{reinterpret_cast<char const*>(std::data(s)), static_cast<size_t>(size)};
 }
 
 // to_bytes creates a std::span<uint8_t> from contiguous container.
@@ -106,8 +119,8 @@ std::span<uint8_t const> to_bytes(T&& s) {
 
 // to_bytes creates a std::span<uint8_t> from contiguous container.
 template <typename T>
-std::span<uint8_t const> to_bytes(T&& s, size_t size) {
-  return std::span{reinterpret_cast<uint8_t const*>(std::data(s)), size};
+std::span<uint8_t const> to_bytes(T&& s, long size) {
+  return std::span{reinterpret_cast<uint8_t const*>(std::data(s)), static_cast<size_t>(size)};
 }
 
-}  // namespace std
+}  // namespace bongo::bytes

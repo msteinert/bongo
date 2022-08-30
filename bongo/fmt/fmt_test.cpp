@@ -56,30 +56,30 @@ auto check(std::string_view format, T&& v, std::string_view exp) -> void {
   CHECK(s == exp);
 }
 
-auto zero_fill(std::string prefix, int width, std::string suffix) -> std::string {
+auto zero_fill(std::string prefix, long width, std::string suffix) -> std::string {
   return prefix + strings::repeat("0", width-suffix.size()) + suffix;
 }
 
 struct I {
-  int value;
+  long value;
   std::string str() const { return sprintf("<%d>", value); }
 };
 
 struct F {
-  int value;
+  long value;
   template <State T>
   void format(T& state, rune c) const { fprintf(state, "<%c=F(%d)>", c, value); }
 };
 
 struct G {
-  int value;
+  long value;
   std::string bongostr() const { return sprintf("BongoString(%d)", value); }
 };
 
 constexpr static auto nan = std::numeric_limits<double>::quiet_NaN();
 constexpr static auto inf = std::numeric_limits<double>::infinity();
 
-int intvar = 0;
+long intvar = 0;
 
 TEST_CASE("Sprintf", "[fmt]") {
   check("%d", 12345, "12345");
@@ -573,8 +573,8 @@ TEST_CASE("Sprintf", "[fmt]") {
   check("%g", 1.23456789e20, "1.23456789e+20");
 
   // spans
-  check("%v", std::array<int, 5>{1, 2, 3, 4, 5}, "[1 2 3 4 5]");
-  check("%v", std::vector<int>{1, 2, 3, 4, 5}, "[1 2 3 4 5]");
+  check("%v", std::array<long, 5>{1, 2, 3, 4, 5}, "[1 2 3 4 5]");
+  check("%v", std::vector<long>{1, 2, 3, 4, 5}, "[1 2 3 4 5]");
 
   // byte spans with %b,%c,%d,%o,%U and %v
   check("%b", std::array<char, 3>{65, 66, 67}, "[1000001 1000010 1000011]");
@@ -620,14 +620,14 @@ TEST_CASE("Sprintf", "[fmt]") {
   check("%#v", static_cast<float>(1000000.0), "1e+06");
 
   // slices/maps with other formats
-  check("%#x", std::array<int, 3>{1, 2, 15}, "[0x1 0x2 0xf]");
-  check("%x", std::array<int, 3>{1, 2, 15}, "[1 2 f]");
-  check("%d", std::array<int, 3>{1, 2, 15}, "[1 2 15]");
+  check("%#x", std::array<long, 3>{1, 2, 15}, "[0x1 0x2 0xf]");
+  check("%x", std::array<long, 3>{1, 2, 15}, "[1 2 f]");
+  check("%d", std::array<long, 3>{1, 2, 15}, "[1 2 15]");
   check("%d", std::array<uint8_t, 3>{1, 2, 15}, "[1 2 15]");
   check("%q", std::array<std::string_view, 2>{"a", "b"}, R"(["a" "b"])");
   check("% 02x", std::array<uint8_t, 1>{1}, "01");
   check("% 02x", std::array<uint8_t, 3>{1, 2, 3}, "01 02 03");
-  check("%v", std::map<int, int>{{1, 2}, {3, 4}}, "[1:2 3:4]");
+  check("%v", std::map<long, long>{{1, 2}, {3, 4}}, "[1:2 3:4]");
   check("%v", std::make_tuple(1, 2, 3, 4), "[1 2 3 4]");
 
   // Padding with byte slices.
@@ -686,17 +686,18 @@ TEST_CASE("Sprintf", "[fmt]") {
   check("%# -010X", "\xab\xcd", "0XAB 0XCD ");
 
   // Formatter
+  static_assert(Formatter<F, detail::printer>);
   check("%x", F{1}, "<x=F(1)>");
 
   // BongoStringer
   check("%#v", G{6}, "BongoString(6)");
 
   // %p with pointers
-  check("%p", static_cast<int*>(nullptr), "0x0");
-  check("%#p", static_cast<int*>(nullptr), "0");
+  check("%p", static_cast<long*>(nullptr), "0x0");
+  check("%#p", static_cast<long*>(nullptr), "0");
   check("%p", &intvar, "0xPTR");
   check("%#p", &intvar, "PTR");
-  check("%8.2p", static_cast<int*>(nullptr), "    0x00");
+  check("%8.2p", static_cast<long*>(nullptr), "    0x00");
   check("%-20.16p", &intvar, "0xPTR  ");
   check("%p", 27, "%!p(int=27)");  // not a pointer at all
   // pointers with specified base
@@ -708,11 +709,11 @@ TEST_CASE("Sprintf", "[fmt]") {
   // %v on pointers
   check("%v", nullptr, "<nil>");
   check("%#v", nullptr, "<nil>");
-  check("%v", static_cast<int*>(nullptr), "<nil>");
-  check("%#v", static_cast<int*>(nullptr), "(int*)(nil)");
+  check("%v", static_cast<long*>(nullptr), "<nil>");
+  check("%#v", static_cast<long*>(nullptr), "(long*)(nil)");
   check("%v", &intvar, "0xPTR");
-  check("%#v", &intvar, "(int*)(0xPTR)");
-  check("%8.2v", static_cast<int*>(nullptr), "   <nil>");
+  check("%#v", &intvar, "(long*)(0xPTR)");
+  check("%8.2v", static_cast<long*>(nullptr), "   <nil>");
   check("%-20.16v", &intvar, "0xPTR  ");
 
   // erroneous things

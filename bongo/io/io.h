@@ -11,44 +11,45 @@
 #include <utility>
 
 #include <bongo/bongo.h>
+#include <bongo/bytes/bytes.h>
 #include <bongo/io/error.h>
 
 namespace bongo::io {
 
-constexpr static int seek_start = 0;
-constexpr static int seek_current = 1;
-constexpr static int seek_end = 2;
+constexpr static long seek_start = 0;
+constexpr static long seek_current = 1;
+constexpr static long seek_end = 2;
 
 // Reader is the interface that wraps the basic read method.
 template <typename T>
 concept Reader = requires (T r, std::span<uint8_t> p) {
-  { r.read(p) } -> std::same_as<std::pair<int, std::error_code>>;
+  { r.read(p) } -> std::same_as<std::pair<long, std::error_code>>;
 };
 
 template <typename T> requires Reader<T>
-std::pair<int, std::error_code> read(T& r, std::span<uint8_t> p) {
+std::pair<long, std::error_code> read(T& r, std::span<uint8_t> p) {
   return r.read(p);
 }
 
 template <typename T>
 concept ReaderFunc = requires (T r, std::span<uint8_t> p) {
-  { read(r, p) } -> std::same_as<std::pair<int, std::error_code>>;
+  { read(r, p) } -> std::same_as<std::pair<long, std::error_code>>;
 };
 
 // Writer is the interface that wraps the basic write method.
 template <typename T>
 concept Writer = requires (T w, std::span<uint8_t const> const p) {
-  { w.write(p) } -> std::same_as<std::pair<int, std::error_code>>;
+  { w.write(p) } -> std::same_as<std::pair<long, std::error_code>>;
 };
 
 template <Writer T>
-std::pair<int, std::error_code> write(T& w, std::span<uint8_t const> const p) {
+std::pair<long, std::error_code> write(T& w, std::span<uint8_t const> const p) {
   return w.write(p);
 }
 
 template <typename T>
 concept WriterFunc = requires (T w, std::span<uint8_t const> const p) {
-  { write(w, p) } -> std::same_as<std::pair<int, std::error_code>>;
+  { write(w, p) } -> std::same_as<std::pair<long, std::error_code>>;
 };
 
 // Closer is the interface that wraps the basic close method.
@@ -69,18 +70,95 @@ concept CloserFunc = requires (T c) {
 
 // Seeker is the interface that wraps the basic seek method.
 template <typename T>
-concept Seeker = requires (T s, int64_t offset, int whence) {
+concept Seeker = requires (T s, int64_t offset, long whence) {
   { s.seek(offset, whence) } -> std::same_as<std::pair<int64_t, std::error_code>>;
 };
 
 template <typename T> requires Seeker<T>
-std::pair<int64_t, std::error_code> seek(T& s, int64_t offset, int whence) {
+std::pair<int64_t, std::error_code> seek(T& s, int64_t offset, long whence) {
   return s.seek(offset, whence);
 }
 
 template <typename T>
-concept SeekerFunc = requires (T s, int64_t offset, int whence) {
+concept SeekerFunc = requires (T s, int64_t offset, long whence) {
   { seek(s, offset, whence) } -> std::same_as<std::pair<int64_t, std::error_code>>;
+};
+
+// ReadWriter is the interface that groups the basic read and write methods.
+template <typename T>
+concept ReadWriter = requires {
+  requires Reader<T> && Writer<T>;
+};
+
+template <typename T>
+concept ReadWriterFunc = requires {
+  requires ReaderFunc<T> && WriterFunc<T>;
+};
+
+// ReadCloser is the interface that groups the basic read and close methods.
+template <typename T>
+concept ReadCloser = requires {
+  requires Reader<T> && Closer<T>;
+};
+
+template <typename T>
+concept ReadCloserFunc = requires {
+  requires ReaderFunc<T> && CloserFunc<T>;
+};
+
+// WriteCloser is the interface that groups the basic write and close methods.
+template <typename T>
+concept WriteCloser = requires {
+  requires Writer<T> && Closer<T>;
+};
+
+template <typename T>
+concept WriteCloserFunc = requires {
+  requires WriterFunc<T> && CloserFunc<T>;
+};
+
+// ReadWriteCloser is the interface the groups the basic read, write, and close methods.
+template <typename T>
+concept ReadWriteCloser = requires {
+  requires Reader<T> && Writer<T> && Closer<T>;
+};
+
+template <typename T>
+concept ReadWriteCloserFunc = requires {
+  requires ReaderFunc<T> && WriterFunc<T> && CloserFunc<T>;
+};
+
+// ReadSeeker is the interface that groups the basic read and seek methods.
+template <typename T>
+concept ReadSeeker = requires {
+  requires Reader<T> && Seeker<T>;
+};
+
+template <typename T>
+concept ReadSeekerFunc = requires {
+  requires ReaderFunc<T> && SeekerFunc<T>;
+};
+
+// WriteSeeker is the interface that groups the basic write and seek methods.
+template <typename T>
+concept WriteSeeker = requires {
+  requires Writer<T> && Seeker<T>;
+};
+
+template <typename T>
+concept WriteSeekerFunc = requires {
+  requires WriterFunc<T> && SeekerFunc<T>;
+};
+
+// ReadWriteSeeker is the interface that groups the basic read, write, and seek methods.
+template <typename T>
+concept ReadWriteSeeker = requires {
+  requires Reader<T> && Writer<T> && Seeker<T>;
+};
+
+template <typename T>
+concept ReadWriteSeekerFunc = requires {
+  requires ReaderFunc<T> && WriterFunc<T> && SeekerFunc<T>;
 };
 
 // ReaderFrom is the interface that wraps the read_from method.
@@ -118,33 +196,33 @@ concept WriterToFunc = requires (T r, U w) {
 // ReaderAt is the interface that wraps the basic read_at method.
 template <typename T>
 concept ReaderAt = requires (T r, std::span<uint8_t> p, int64_t off) {
-  { r.read_at(p, off) } -> std::same_as<std::pair<int, std::error_code>>;
+  { r.read_at(p, off) } -> std::same_as<std::pair<long, std::error_code>>;
 };
 
 template <typename T> requires ReaderAt<T>
-std::pair<int, std::error_code> read_at(T& r, std::span<uint8_t> p, int64_t off) {
+std::pair<long, std::error_code> read_at(T& r, std::span<uint8_t> p, int64_t off) {
   return r.read_at(p, off);
 }
 
 template <typename T>
 concept ReaderAtFunc = requires (T r, std::span<uint8_t> p, int64_t off) {
-  { read_at(r, p, off) } -> std::same_as<std::pair<int, std::error_code>>;
+  { read_at(r, p, off) } -> std::same_as<std::pair<long, std::error_code>>;
 };
 
 // WriterAt is the interface that wraps the basic write_at method.
 template <typename T>
 concept WriterAt = requires (T w, std::span<uint8_t const> p, int64_t off) {
-  { w.write_at(p, off) } -> std::same_as<std::pair<int, std::error_code>>;
+  { w.write_at(p, off) } -> std::same_as<std::pair<long, std::error_code>>;
 };
 
 template <typename T> requires WriterAt<T>
-std::pair<int, std::error_code> write_at(T& w, std::span<uint8_t const> p, int64_t off) {
+std::pair<long, std::error_code> write_at(T& w, std::span<uint8_t const> p, int64_t off) {
   return w.write_at(p, off);
 }
 
 template <typename T>
 concept WriterAtFunc = requires (T w, std::span<uint8_t const> p, int64_t off) {
-  { write_at(w, p, off) } -> std::same_as<std::pair<int, std::error_code>>;
+  { write_at(w, p, off) } -> std::same_as<std::pair<long, std::error_code>>;
 };
 
 // ByteReader is the interface that wraps the read_byte method.
@@ -198,17 +276,17 @@ concept ByteWriterFunc = requires (T w, uint8_t c) {
 // RuneReader is the interface that wraps the read_rune method.
 template <typename T>
 concept RuneReader = requires (T r) {
-  { r.read_rune() } -> std::same_as<std::tuple<rune, int, std::error_code>>;
+  { r.read_rune() } -> std::same_as<std::tuple<rune, long, std::error_code>>;
 };
 
 template <typename T> requires RuneReader<T>
-std::tuple<rune, int, std::error_code> read_rune(T& r) {
+std::tuple<rune, long, std::error_code> read_rune(T& r) {
   return r.read_rune();
 }
 
 template <typename T>
 concept RuneReaderFunc = requires (T r) {
-  { read_rune(r) } -> std::same_as<std::tuple<rune, int, std::error_code>>;
+  { read_rune(r) } -> std::same_as<std::tuple<rune, long, std::error_code>>;
 };
 
 // RuneUnreader is the interface that wraps the unread_rune method.
@@ -230,28 +308,31 @@ concept RuneUnreaderFunc = requires (T r) {
 // StringWriter is the interface that wraps the write_string method.
 template <typename T>
 concept StringWriter = requires (T w, std::string_view s) {
-  { write_string(w, s) } -> std::same_as<std::pair<int, std::error_code>>;
+  { w.write_string(s) } -> std::same_as<std::pair<long, std::error_code>>;
 };
 
-template <typename T> requires Writer<T>
-std::pair<int, std::error_code> write_string(T& w, std::string_view s) {
-  return w.write(std::span<uint8_t const>{reinterpret_cast<uint8_t const*>(s.data()), s.size()});
+template <typename T> requires StringWriter<T> || WriterFunc<T>
+std::pair<long, std::error_code> write_string(T& w, std::string_view s) {
+  if constexpr (StringWriter<T>) {
+    return w.write_string(s);
+  }
+  return write(w, bytes::to_bytes(s));
 }
 
 template <typename T>
 concept StringWriterFunc = requires (T w, std::string_view s) {
-  { write_string(w, s) } -> std::same_as<std::pair<int, std::error_code>>;
+  { write_string(w, s) } -> std::same_as<std::pair<long, std::error_code>>;
 };
 
 template <typename T> requires ReaderFunc<T>
-std::pair<int, std::error_code> read_at_least(T& r, std::span<uint8_t> buf, int min) {
+std::pair<long, std::error_code> read_at_least(T& r, std::span<uint8_t> buf, long min) {
   if (buf.size() < static_cast<size_t>(min)) {
     return {0, error::short_buffer};
   }
-  int n = 0;
+  long n = 0;
   std::error_code err = nil;
   while (n < min && err == nil) {
-    int nn;
+    long nn;
     std::tie(nn, err) = read(r, buf.subspan(n));
     n += nn;
   }
@@ -264,12 +345,12 @@ std::pair<int, std::error_code> read_at_least(T& r, std::span<uint8_t> buf, int 
 }
 
 template <typename T> requires ReaderFunc<T>
-std::pair<int, std::error_code> read_at_least(T& r, std::span<uint8_t> buf) {
-  return read_at_least(r, buf, static_cast<int>(buf.size()));
+std::pair<long, std::error_code> read_at_least(T& r, std::span<uint8_t> buf) {
+  return read_at_least(r, buf, static_cast<long>(buf.size()));
 }
 
 template <typename T> requires ReaderFunc<T>
-std::pair<int, std::error_code> read_full(T& r, std::span<uint8_t> buf) {
+std::pair<long, std::error_code> read_full(T& r, std::span<uint8_t> buf) {
   return read_at_least(r, buf, buf.size());
 }
 
@@ -282,7 +363,7 @@ struct limited_reader {
       : r{r_}
       , n{n_} {}
 
-  std::pair<int, std::error_code> read(std::span<uint8_t> p) {
+  std::pair<long, std::error_code> read(std::span<uint8_t> p) {
     if (n <= 0) {
       return {0, eof};
     }
@@ -296,7 +377,7 @@ struct limited_reader {
   }
 };
 
-template <typename T, typename U> requires WriterFunc<T> && ReaderFunc<U>
+template <typename T, typename U> requires WriterToFunc<U, T> || ReaderFromFunc<T, U> || (WriterFunc<T> && ReaderFunc<U>)
 std::pair<int64_t, std::error_code> copy_buffer(T& dst, U& src, std::span<uint8_t> buf) {
   if constexpr (WriterToFunc<U, T>) {
     return write_to(src, dst);
@@ -312,9 +393,9 @@ std::pair<int64_t, std::error_code> copy_buffer(T& dst, U& src, std::span<uint8_
   int64_t written = 0;
   std::error_code err = nil;
   for (;;) {
-    auto [nr, er] = src.read(buf);
+    auto [nr, er] = read(src, buf);
     if (nr > 0) {
-      auto [nw, ew] = dst.write(buf.subspan(0, nr));
+      auto [nw, ew] = write(dst, buf.subspan(0, nr));
       if (nw < 0 || nr < nw) {
         nw = 0;
         if (ew == nil) {
@@ -378,7 +459,7 @@ class section_reader {
     return limit_ - base_;
   }
 
-  std::pair<int, std::error_code> read(std::span<uint8_t> p) {
+  std::pair<long, std::error_code> read(std::span<uint8_t> p) {
     if (off_ >= limit_) {
       return {0, eof};
     }
@@ -390,7 +471,7 @@ class section_reader {
     return {n, err};
   }
 
-  std::pair<int64_t, std::error_code> seek(int64_t offset, int whence) {
+  std::pair<int64_t, std::error_code> seek(int64_t offset, long whence) {
     switch (whence) {
     default:
       return {0, error::whence};
@@ -411,7 +492,7 @@ class section_reader {
     return {offset - base_, nil};
   }
 
-  std::pair<int, std::error_code> read_at(std::span<uint8_t> p, int64_t off) {
+  std::pair<long, std::error_code> read_at(std::span<uint8_t> p, int64_t off) {
     if (off < 0 || off >= limit_-base_) {
       return {0, eof};
     }
@@ -437,7 +518,7 @@ struct tee_reader {
       : r{r_}
       , w{w_} {}
 
-  std::pair<int, std::error_code> read(std::span<uint8_t> p) {
+  std::pair<long, std::error_code> read(std::span<uint8_t> p) {
     using io::read;
     auto [n, err] = read(r, p);
     if (n > 0) {
@@ -450,11 +531,26 @@ struct tee_reader {
 };
 
 struct discard {
-  std::pair<int, std::error_code> write(std::span<uint8_t const> p) {
+  std::pair<long, std::error_code> write(std::span<uint8_t const> p) {
     return {p.size(), nil};
   }
-  std::pair<int, std::error_code> write_string(std::string_view s) {
+  std::pair<long, std::error_code> write_string(std::string_view s) {
     return {s.size(), nil};
+  }
+  template <typename T> requires io::Reader<T>
+  auto read_from(T& r) -> std::pair<int64_t, std::error_code> {
+    uint8_t buf[8192];
+    int64_t n = 0;
+    for (;;) {
+      auto [read_size, err] = r.read(buf);
+      n += read_size;
+      if (err != nil) {
+        if (err == eof) {
+          return {n, nil};
+        }
+        return {n, err};
+      }
+    }
   }
 };
 
@@ -471,7 +567,7 @@ struct nop_closer {
 template <typename T> requires ReaderFunc<T>
 std::pair<std::vector<uint8_t>, std::error_code> read_all(T& r) {
   auto b = std::vector<uint8_t>(512, 0);
-  int n = 0;
+  long n = 0;
   for (;;) {
     if (static_cast<size_t>(n) == b.capacity()) {
       b.resize(b.size() + 512);

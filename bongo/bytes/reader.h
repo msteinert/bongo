@@ -16,7 +16,7 @@ namespace bongo::bytes {
 class reader {
   std::span<uint8_t const> s_;
   size_t i_ = 0;
-  int prev_rune_ = -1;
+  long prev_rune_ = -1;
 
  public:
   reader() = default;
@@ -25,13 +25,13 @@ class reader {
 
   size_t size() const noexcept;
   size_t total_size() const noexcept;
-  std::pair<int, std::error_code> read(std::span<uint8_t> p);
-  std::pair<int, std::error_code> read_at(std::span<uint8_t> p, int64_t off);
+  std::pair<long, std::error_code> read(std::span<uint8_t> p);
+  std::pair<long, std::error_code> read_at(std::span<uint8_t> p, int64_t off);
   std::pair<uint8_t, std::error_code> read_byte();
   std::error_code unread_byte();
-  std::tuple<rune, int, std::error_code> read_rune();
+  std::tuple<rune, long, std::error_code> read_rune();
   std::error_code unread_rune();
-  std::pair<int64_t, std::error_code> seek(int64_t offset, int whence);
+  std::pair<int64_t, std::error_code> seek(int64_t offset, long whence);
   void reset(std::span<uint8_t const> s);
 
   template <typename Writer>
@@ -56,4 +56,4 @@ std::pair<int64_t, std::error_code> reader::write_to(Writer& w) {
   return {m, err};
 }
 
-}  // namesapce bongo::bytes
+}  // namespace bongo::bytes

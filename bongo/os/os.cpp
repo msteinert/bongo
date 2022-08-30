@@ -24,11 +24,11 @@ std::pair<file, std::error_code> create(std::string const& name) {
   return create(std::string{name});
 }
 
-std::pair<file, std::error_code> open_file(std::string&& name, int flag, file_mode perm) {
+std::pair<file, std::error_code> open_file(std::string&& name, long flag, file_mode perm) {
   return open_file_nolog(std::move(name), flag, perm);
 }
 
-std::pair<file, std::error_code> open_file(std::string const& name, int flag, file_mode perm) {
+std::pair<file, std::error_code> open_file(std::string const& name, long flag, file_mode perm) {
   return open_file(std::string{name}, flag, perm);
 }
 

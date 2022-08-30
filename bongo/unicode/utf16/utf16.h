@@ -77,4 +77,4 @@ constexpr OutputIt decode(InputIt begin, InputIt end, OutputIt out) {
   return out;
 }
 
-}  // namesapce bongo::unicode::utf16
+}  // namespace bongo::unicode::utf16

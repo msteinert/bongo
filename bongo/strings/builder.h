@@ -37,10 +37,10 @@ class builder {
   std::span<uint8_t> bytes() const noexcept;
   std::string_view str() const;
 
-  std::pair<int, std::error_code> write(std::span<uint8_t const> p);
+  std::pair<long, std::error_code> write(std::span<uint8_t const> p);
   std::error_code write_byte(uint8_t b);
-  std::pair<int, std::error_code> write_rune(rune r);
-  std::pair<int, std::error_code> write_string(std::string_view s);
+  std::pair<long, std::error_code> write_rune(rune r);
+  std::pair<long, std::error_code> write_string(std::string_view s);
 
   iterator begin() { return buf_; }
   iterator end() { return buf_ + size_; }
@@ -52,4 +52,4 @@ class builder {
   void ensure(size_t n);
 };
 
-}  // namesapce bongo::strings
+}  // namespace bongo::strings

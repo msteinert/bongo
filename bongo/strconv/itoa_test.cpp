@@ -14,7 +14,7 @@ namespace bongo::strconv {
 
 TEST_CASE("Format integer", "[strconv]") {
   SECTION("int64") {
-    auto test_cases = std::vector<std::tuple<int64_t, int, std::string_view>>{
+    auto test_cases = std::vector<std::tuple<int64_t, long, std::string_view>>{
       {0, 10, "0"},
       {1, 10, "1"},
       {-1, 10, "-1"},
@@ -62,7 +62,7 @@ TEST_CASE("Format integer", "[strconv]") {
     }
   }
   SECTION("uint64") {
-    auto test_cases = std::vector<std::tuple<uint64_t, int, std::string_view>>{
+    auto test_cases = std::vector<std::tuple<uint64_t, long, std::string_view>>{
       {9223372036854775807ull, 10, "9223372036854775807"},
       {9223372036854775808ull, 10, "9223372036854775808"},
       {9223372036854775809ull, 10, "9223372036854775809"},

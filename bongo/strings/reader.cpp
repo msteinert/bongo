@@ -25,7 +25,7 @@ size_t reader::total_size() const noexcept {
   return s_.size();
 }
 
-std::pair<int, std::error_code> reader::read(std::span<uint8_t> p) {
+std::pair<long, std::error_code> reader::read(std::span<uint8_t> p) {
   if (i_ >= s_.size()) {
     return {0, io::eof};
   }
@@ -37,7 +37,7 @@ std::pair<int, std::error_code> reader::read(std::span<uint8_t> p) {
   return {n, nil};
 }
 
-std::pair<int, std::error_code> reader::read_at(std::span<uint8_t> p, int64_t off) {
+std::pair<long, std::error_code> reader::read_at(std::span<uint8_t> p, int64_t off) {
   if (off < 0) {
     return {0, io::error::offset};
   }
@@ -70,13 +70,13 @@ std::error_code reader::unread_byte() {
   return nil;
 }
 
-std::tuple<rune, int, std::error_code> reader::read_rune() {
+std::tuple<rune, long, std::error_code> reader::read_rune() {
   namespace utf8 = unicode::utf8;
   if (i_ >= s_.size()) {
     prev_rune_ = -1;
     return {0, 0, io::eof};
   }
-  prev_rune_ = static_cast<int>(i_);
+  prev_rune_ = static_cast<long>(i_);
   if (auto c = s_[i_]; utf8::to_rune(c) < unicode::utf8::rune_self) {
     ++i_;
     return {utf8::to_rune(c), 1, nil};
@@ -98,7 +98,7 @@ std::error_code reader::unread_rune() {
   return nil;
 }
 
-std::pair<int64_t, std::error_code> reader::seek(int64_t offset, int whence) {
+std::pair<int64_t, std::error_code> reader::seek(int64_t offset, long whence) {
   prev_rune_ = -1;
   int64_t abs;
   switch (whence) {
@@ -127,4 +127,4 @@ void reader::reset(std::string_view s) {
   prev_rune_ = -1;
 }
 
-}  // namesapce bongo::strings
+}  // namespace bongo::strings

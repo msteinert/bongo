@@ -95,14 +95,14 @@ TEST_CASE("Copy priority", "[io]") {
 
 struct zero_err_reader {
   std::error_code err;
-  std::pair<int, std::error_code> read(std::span<uint8_t> p) {
+  std::pair<long, std::error_code> read(std::span<uint8_t> p) {
     return {p.size(), err};
   }
 };
 
 struct err_writer {
   std::error_code err;
-  std::pair<int, std::error_code> write(std::span<uint8_t const>) {
+  std::pair<long, std::error_code> write(std::span<uint8_t const>) {
     return {0, err};
   }
 };
@@ -144,13 +144,13 @@ struct no_read_from {
   no_read_from(T& t_)
       : t{t_} {}
 
-  std::pair<int, std::error_code> write(std::span<uint8_t const> p) {
+  std::pair<long, std::error_code> write(std::span<uint8_t const> p) {
     return t.write(p);
   }
 };
 
 struct wanted_and_err_reader {
-  std::pair<int, std::error_code> read(std::span<uint8_t> p) {
+  std::pair<long, std::error_code> read(std::span<uint8_t> p) {
     return {p.size(), std::make_error_code(std::errc::not_a_socket)};
   }
 };
@@ -224,7 +224,7 @@ TEST_CASE("Read at least", "[io]") {
 
 struct data_and_error_buffer : bytes::buffer {
   std::error_code err;
-  std::pair<int, std::error_code> read(std::span<uint8_t> p) {
+  std::pair<long, std::error_code> read(std::span<uint8_t> p) {
     auto [n, err2] = bytes::buffer::read(p);
     if (n > 0 && size() == 0 && err2 == nil) {
       return {n, err};
@@ -272,15 +272,15 @@ TEST_CASE("Tee reader", "[io]") {
 TEST_CASE("Section reader read_at", "[io]") {
   struct test_case {
     std::string_view data;
-    int off;
-    int n;
-    int buf_len;
-    int at;
+    long off;
+    long n;
+    long buf_len;
+    long at;
     std::string_view exp;
     std::error_code err;
   };
   auto const dat = std::string_view{"a long sample data, 1234567890"};
-  int const size = static_cast<int>(dat.size());
+  long const size = static_cast<long>(dat.size());
   auto test_cases = std::vector<test_case>{
     {"",  0, 10, 2, 0, "", eof},
     {dat, 0, size, 0, 0, "", nil},
@@ -301,7 +301,7 @@ TEST_CASE("Section reader read_at", "[io]") {
     auto s = section_reader{r, tt.off, tt.n};
     auto buf = std::vector<uint8_t>(tt.buf_len);
     auto [n, err] = s.read_at(buf, tt.at);
-    CHECK(n == static_cast<int>(tt.exp.size()));
+    CHECK(n == static_cast<long>(tt.exp.size()));
     CHECK(bytes::to_string(std::span(buf).subspan(0, n)) == tt.exp);
     CHECK(err == tt.err);
   }
@@ -310,9 +310,9 @@ TEST_CASE("Section reader read_at", "[io]") {
 TEST_CASE("Section reader seek", "[io]") {
   auto buf = "foo"sv;
   auto br = bytes::reader{bytes::to_bytes(buf)};
-  auto sr = section_reader{br, 0, static_cast<int>(buf.size())};
+  auto sr = section_reader{br, 0, static_cast<long>(buf.size())};
 
-  for (auto whence : std::vector<int>{seek_start, seek_current, seek_end}) {
+  for (auto whence : std::vector<long>{seek_start, seek_current, seek_end}) {
     for (int64_t offset = -3; offset <= 4; ++offset) {
       CAPTURE(whence, offset);
       auto [br_off, br_err] = br.seek(offset, whence);
@@ -339,7 +339,7 @@ TEST_CASE("Section reader size", "[io]") {
   };
   for (auto [data, exp] : test_cases) {
     auto r = strings::reader{data};
-    auto sr = section_reader{r, 0, static_cast<int>(data.size())};
+    auto sr = section_reader{r, 0, static_cast<long>(data.size())};
     CHECK(sr.size() == exp);
   }
 }
@@ -358,8 +358,8 @@ TEST_CASE("Section reader max", "[io]") {
 
 struct large_writer {
   std::error_code err = nil;
-  std::pair<int, std::error_code> write(std::span<uint8_t const> p) {
-    return {static_cast<int>(p.size() + 1), err};
+  std::pair<long, std::error_code> write(std::span<uint8_t const> p) {
+    return {static_cast<long>(p.size() + 1), err};
   }
 };
 

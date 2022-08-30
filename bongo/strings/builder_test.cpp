@@ -86,8 +86,8 @@ TEST_CASE("String builder: grow", "[strings]") {
 TEST_CASE("String builder: write 2", "[strings]") {
   struct test_case {
     std::string name;
-    std::function<std::pair<int, std::error_code>(builder&)> fn;
-    int n;
+    std::function<std::pair<long, std::error_code>(builder&)> fn;
+    long n;
     std::string want;
   };
   auto s0 = "hello 世界"s;
@@ -95,7 +95,7 @@ TEST_CASE("String builder: write 2", "[strings]") {
     test_case{
       "write",
       [&](builder& b) { return b.write(bytes::to_bytes(s0)); },
-      static_cast<int>(s0.size()),
+      static_cast<long>(s0.size()),
       s0
     },
     test_case{
@@ -113,7 +113,7 @@ TEST_CASE("String builder: write 2", "[strings]") {
     test_case{
       "write_string",
       [&](builder& b) { return b.write_string(s0); },
-      static_cast<int>(s0.size()),
+      static_cast<long>(s0.size()),
       s0
     },
   };

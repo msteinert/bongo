@@ -11,9 +11,9 @@ namespace bongo::strings {
 namespace detail {
 
 template <std::input_iterator InputIt>
-auto explode(InputIt it, InputIt end, int n) -> std::vector<std::string_view> {
+auto explode(InputIt it, InputIt end, long n) -> std::vector<std::string_view> {
   namespace utf8 = unicode::utf8;
-  auto l = static_cast<int>(utf8::count(it, end));
+  auto l = static_cast<long>(utf8::count(it, end));
   if (n < 0 || n > l) {
     n = l;
   }
@@ -31,7 +31,7 @@ auto explode(InputIt it, InputIt end, int n) -> std::vector<std::string_view> {
   return a;
 }
 
-auto generic_split(std::string_view s, std::string_view sep, int sep_save, int n) -> std::vector<std::string_view> {
+auto generic_split(std::string_view s, std::string_view sep, long sep_save, long n) -> std::vector<std::string_view> {
   if (n == 0) {
     return {};
   }
@@ -47,7 +47,7 @@ auto generic_split(std::string_view s, std::string_view sep, int sep_save, int n
   std::vector<std::string_view> a;
   a.reserve(n);
   --n;
-  int i = 0;
+  long i = 0;
   while (i < n) {
     auto m = strings::index(s, sep);
     if (m == std::string_view::npos) {
@@ -63,11 +63,11 @@ auto generic_split(std::string_view s, std::string_view sep, int sep_save, int n
 
 }  // namespace detail
 
-auto split(std::string_view s, std::string_view sep, int n) -> std::vector<std::string_view> {
+auto split(std::string_view s, std::string_view sep, long n) -> std::vector<std::string_view> {
   return detail::generic_split(s, sep, 0, n);
 }
 
-auto split_after(std::string_view s, std::string_view sep, int n) -> std::vector<std::string_view> {
+auto split_after(std::string_view s, std::string_view sep, long n) -> std::vector<std::string_view> {
   return detail::generic_split(s, sep, sep.size(), n);
 }
 
@@ -79,7 +79,7 @@ auto split_after(std::string_view s, std::string_view sep) -> std::vector<std::s
   return detail::generic_split(s, sep, sep.size(), -1);
 }
 
-auto join(std::span<std::string_view> e, std::string_view sep) -> std::string {
+auto join(std::span<std::string_view const> e, std::string_view sep) -> std::string {
   switch (e.size()) {
   case 0:
     return "";
@@ -167,7 +167,7 @@ auto repeat(std::string_view s, size_t count) -> std::string {
   return std::string{b.str()};
 }
 
-auto replace(std::string_view s, std::string_view old_s, std::string_view new_s, int n) -> std::string {
+auto replace(std::string_view s, std::string_view old_s, std::string_view new_s, long n) -> std::string {
   namespace utf8 = unicode::utf8;
   if (old_s == new_s || n == 0) {
     return std::string{s};
@@ -202,4 +202,4 @@ auto replace(std::string_view s, std::string_view old_s, std::string_view new_s)
   return replace(s, old_s, new_s, -1);
 }
 
-}  // namesapce bongo::strings
+}  // namespace bongo::strings

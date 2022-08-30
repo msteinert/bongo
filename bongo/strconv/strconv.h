@@ -28,7 +28,7 @@ constexpr auto parse(InputIt begin, InputIt end) -> std::pair<T, std::error_code
 
 /// Integer with base parameter.
 template <typename T, std::input_iterator InputIt>
-constexpr auto parse(InputIt begin, InputIt end, int base) -> std::pair<T, std::error_code> {
+constexpr auto parse(InputIt begin, InputIt end, long base) -> std::pair<T, std::error_code> {
   return parser<T, InputIt>{}(begin, end, base);
 }
 
@@ -40,7 +40,7 @@ constexpr auto parse(std::string_view s) -> std::pair<T, std::error_code> {
 
 /// Integer with base parameter.
 template <typename T>
-constexpr auto parse(std::string_view s, int base) -> std::pair<T, std::error_code> {
+constexpr auto parse(std::string_view s, long base) -> std::pair<T, std::error_code> {
   return parser<T, std::string_view::iterator>{}(std::begin(s), std::end(s), base);
 }
 
@@ -54,7 +54,7 @@ auto format(T v) -> std::string {
 
 /// Integer with base parameter.
 template <typename T>
-auto format(T v, int arg0) -> std::string {
+auto format(T v, long arg0) -> std::string {
   std::string out;
   format(v, std::back_inserter(out), arg0);
   return out;
@@ -62,14 +62,14 @@ auto format(T v, int arg0) -> std::string {
 
 /// Floating point with format and precision parameters.
 template <typename T>
-auto format(T v, char arg0, int arg1) -> std::string {
+auto format(T v, char arg0, long arg1) -> std::string {
   std::string out;
   format(v, std::back_inserter(out), arg0, arg1);
   return out;
 }
 
 template <typename T>
-auto format(std::complex<T> v, char arg0, int arg1) -> std::string {
+auto format(std::complex<T> v, char arg0, long arg1) -> std::string {
   std::string out;
   format(v, std::back_inserter(out), arg0, arg1);
   return out;

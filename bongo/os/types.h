@@ -11,7 +11,7 @@
 
 namespace bongo::os {
 
-inline int getpagesize() noexcept {
+inline long getpagesize() noexcept {
   return syscall::getpagesize();
 }
 
@@ -36,15 +36,15 @@ using io::fs::mode_perm;
 
 // Flags to open_file.
 // Exactly one of o_rdonly, o_wronly, or o_rdwr must be specified.
-constexpr static int o_rdonly = O_RDONLY;  // Open the file read-only.
-constexpr static int o_wronly = O_WRONLY;  // Open the file write-only.
-constexpr static int o_rdwr   = O_RDWR;    // open the file read-write.
+constexpr static long o_rdonly = O_RDONLY;  // Open the file read-only.
+constexpr static long o_wronly = O_WRONLY;  // Open the file write-only.
+constexpr static long o_rdwr   = O_RDWR;    // open the file read-write.
 // The remaining flags may be or'ed in to control the behavior.
-constexpr static int o_append = O_APPEND;  // Append datat to the file when writing.
-constexpr static int o_create = O_CREAT;   // Create a new file if no exists.
-constexpr static int o_excl   = O_EXCL;    // Used with o_create, file must not exist.
-constexpr static int o_sync   = O_SYNC;    // Open for synchronous I/O.
-constexpr static int o_trunc  = O_TRUNC;   // Truncate regular writable file when opened.
+constexpr static long o_append = O_APPEND;  // Append datat to the file when writing.
+constexpr static long o_create = O_CREAT;   // Create a new file if no exists.
+constexpr static long o_excl   = O_EXCL;    // Used with o_create, file must not exist.
+constexpr static long o_sync   = O_SYNC;    // Open for synchronous I/O.
+constexpr static long o_trunc  = O_TRUNC;   // Truncate regular writable file when opened.
 
 struct file_info {
   std::string name;

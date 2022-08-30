@@ -28,14 +28,14 @@ auto type_name(T const& v) -> std::string {
 
 // too_large reports whether the magnitude of the integer is too large to be
 // used as a formatting width or precision.
-constexpr auto too_large(int x) -> bool {
-  constexpr int max = 1e6;
+constexpr auto too_large(long x) -> bool {
+  constexpr long max = 1e6;
   return x > max || x < -max;
 }
 
 // parse_number converts ASCII to an integer.
 template <std::input_iterator It>
-constexpr auto parse_number(It it, It end) -> std::tuple<int, bool, It> {
+constexpr auto parse_number(It it, It end) -> std::tuple<long, bool, It> {
   if (it >= end) {
     return {0, false, it};
   }
@@ -45,7 +45,7 @@ constexpr auto parse_number(It it, It end) -> std::tuple<int, bool, It> {
     if (too_large(n)){
       return {0, false, end};
     }
-    n = n*10 + static_cast<int>(*it-'0');
+    n = n*10 + static_cast<long>(*it-'0');
     is_num = true;
   }
   return {n, is_num, it};
@@ -53,7 +53,7 @@ constexpr auto parse_number(It it, It end) -> std::tuple<int, bool, It> {
 
 // parse_arg_number returns the value of the bracketed number, minus 1.
 template <std::input_iterator It>
-constexpr auto parse_arg_number(It begin, It end) -> std::tuple<int, bool, It> {
+constexpr auto parse_arg_number(It begin, It end) -> std::tuple<long, bool, It> {
   if (std::distance(begin, end) < 3) {
     return {0, false, std::next(begin)};
   }
@@ -73,15 +73,15 @@ constexpr auto parse_arg_number(It begin, It end) -> std::tuple<int, bool, It> {
 // int_from_arg gets the arg_num'th argument and reports if the argument has
 // integer type.
 template <typename... Args>
-auto int_from_arg(int arg_num, Args... args) -> std::tuple<int, bool, int> {
+auto int_from_arg(long arg_num, Args... args) -> std::tuple<long, bool, long> {
   auto n = 0;
   auto is_int = false;
   auto new_arg_num = arg_num;
   if constexpr (sizeof... (args) > 0) {
-    if (arg_num < static_cast<int>(sizeof... (args))) {
+    if (arg_num < static_cast<long>(sizeof... (args))) {
       visit_arg([&](auto& arg) {
         if constexpr (Integer<decltype(arg)>) {
-          n = static_cast<int>(arg);
+          n = static_cast<long>(arg);
           is_int = true;
         } else {
           n = 0;

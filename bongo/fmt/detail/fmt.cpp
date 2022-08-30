@@ -12,7 +12,7 @@ auto fmt::clear_flags() noexcept -> void {
   flags = fmt_flags{};
 }
 
-auto fmt::write_padding(bytes::buffer& out, int n, bool zero) const -> void {
+auto fmt::write_padding(bytes::buffer& out, long n, bool zero) const -> void {
   if (n <= 0) {
   } else {
     auto pad_byte = !zero ? ' ' : '0';
@@ -22,7 +22,7 @@ auto fmt::write_padding(bytes::buffer& out, int n, bool zero) const -> void {
   }
 }
 
-auto fmt::write_padding(bytes::buffer& out, int n) const -> void {
+auto fmt::write_padding(bytes::buffer& out, long n) const -> void {
   write_padding(out, n, flags.zero);
 }
 

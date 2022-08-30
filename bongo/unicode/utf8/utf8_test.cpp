@@ -242,7 +242,7 @@ TEST_CASE("Count runes", "[unicode/utf8]") {
 }
 
 TEST_CASE("Rune length", "[unicode/utf8]") {
-  auto test_cases = std::vector<std::tuple<rune, int>>{
+  auto test_cases = std::vector<std::tuple<rune, long>>{
     {0, 1},
     {'e', 1},
     {0x00e9, 2},  // é

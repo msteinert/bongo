@@ -14,7 +14,7 @@ class ascii_set {
 
  public:
   constexpr auto contains(uint8_t c) const -> bool { return (bits_[c/32] & (1 << (c % 32))) != 0; }
-  constexpr auto operator[](int i) -> uint32_t& { return bits_[i]; }
+  constexpr auto operator[](long i) -> uint32_t& { return bits_[i]; }
 };
 
 constexpr auto make_ascii_set(std::string_view chars) -> std::pair<ascii_set, bool> {

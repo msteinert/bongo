@@ -18,7 +18,7 @@ using namespace std::chrono_literals;
 using namespace std::string_literals;
 
 struct pipe_return {
-  int n;
+  long n;
   std::error_code err;
 };
 
@@ -93,11 +93,6 @@ TEST_CASE("Pipe: sequence of read/write pairs", "[io]") {
   CHECK(pr.err == io::eof);
   t.join();
 }
-
-template <typename T>
-concept WriteCloser = requires {
-  requires Writer<T> && Closer<T>;
-};
 
 template <WriteCloser T>
 void writer(T& w, std::vector<uint8_t> buf, chan<pipe_return>& c) {
@@ -336,13 +331,13 @@ TEST_CASE("Pipe: close error", "[io]") {
   CHECK(err == test_error1);
 }
 
-std::vector<uint8_t> sort_bytes_in_groups(std::span<uint8_t> b, int n) {
-  std::vector<std::span<uint8_t>> groups;
+std::vector<uint8_t> sort_bytes_in_groups(std::span<uint8_t const> b, long n) {
+  std::vector<std::span<uint8_t const>> groups;
   while (b.size() > 0) {
     groups.push_back(b.subspan(0, n));
     b = b.subspan(n);
   }
-  std::sort(groups.begin(), groups.end(), [](std::span<uint8_t> a, std::span<uint8_t> b) { return bytes::less(a, b); });
+  std::sort(groups.begin(), groups.end(), [](std::span<uint8_t const> a, std::span<uint8_t const> b) { return bytes::less(a, b); });
   return bytes::join(groups, nil);
 }
 
@@ -365,7 +360,7 @@ TEST_CASE("Pipe: concurrent", "[io]") {
     }
 
     auto buf = std::vector<uint8_t>(count*input.size());
-    for (auto i = 0; i < static_cast<int>(buf.size()); i += read_size) {
+    for (auto i = 0; i < static_cast<long>(buf.size()); i += read_size) {
       auto [n, err] = r.read(std::span{std::next(buf.begin(), i), std::next(buf.begin(), i+read_size)});
       CHECK(n == read_size);
       CHECK(err == nil);
@@ -378,7 +373,7 @@ TEST_CASE("Pipe: concurrent", "[io]") {
   }
   SECTION("Read") {
     struct result {
-      int n;
+      long n;
       std::error_code err;
       std::vector<uint8_t> buf;
     };
@@ -398,7 +393,7 @@ TEST_CASE("Pipe: concurrent", "[io]") {
 
     for (auto i = 0; i < count; ++i) {
       auto [n, err] = w.write(bytes::to_bytes(input));
-      CHECK(n == static_cast<int>(input.size()));
+      CHECK(n == static_cast<long>(input.size()));
       CHECK(err == nil);
     }
 

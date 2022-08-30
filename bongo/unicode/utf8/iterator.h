@@ -140,4 +140,4 @@ constexpr bool operator>=(iterator<Iterator> const& lhs,
                           iterator<Iterator> const& rhs) noexcept
 { return lhs.base() >= rhs.base(); }
 
-}  // namesapce bongo::unicode::utf8
+}  // namespace bongo::unicode::utf8

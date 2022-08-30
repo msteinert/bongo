@@ -12,7 +12,6 @@
  */
 
 #include <chrono>
-#include <cstdio>
 #include <iostream>
 #include <thread>
 #include <vector>
@@ -25,12 +24,12 @@ int main() try {
   bongo::sync::wait_group wg;
   std::vector<std::thread> threads;
 
-  for (int i = 0; i < 5; ++i) {
+  for (long i = 0; i < 5; ++i) {
     wg.add(1);
-    threads.emplace_back([&](int i) {
-      printf("Worker %d starting\n", i);
+    threads.emplace_back([&](long i) {
+      std::cout << "Worker " << i << " starting\n";
       std::this_thread::sleep_for(1s);
-      printf("Worker %d done\n", i);
+      std::cout << "Worker " << i << " done\n";
       wg.done();
     }, i);
   }

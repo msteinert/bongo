@@ -15,7 +15,7 @@ namespace bongo::bytes {
 using namespace std::string_view_literals;
 
 std::string init_test_string() {
-  constexpr static int n = 10000;
+  constexpr static long n = 10000;
   auto s = std::string{};
   s.reserve(n);
   for (auto i = 0; i < n; ++i) {
@@ -31,9 +31,9 @@ void check(std::string const& name, buffer const& buf, std::string_view s) {
   INFO(name);
   auto bytes = buf.bytes();
   auto str = buf.str();
-  CHECK(buf.size() == bytes.size());
-  CHECK(buf.size() == str.size());
-  CHECK(buf.size() == s.size());
+  CHECK(static_cast<size_t>(buf.size()) == bytes.size());
+  CHECK(static_cast<size_t>(buf.size()) == str.size());
+  CHECK(static_cast<size_t>(buf.size()) == s.size());
   CHECK(to_string(bytes) == str);
 }
 
@@ -52,7 +52,7 @@ void empty(std::string const& name, buffer& buf, std::string_view s, std::vector
   check(name+" (empty 4)", buf, "");
 }
 
-std::string fill_string(std::string const& name, buffer& buf, std::string s, int n, std::string_view fus) {
+std::string fill_string(std::string const& name, buffer& buf, std::string s, long n, std::string_view fus) {
   check(name+" (fill 1)", buf, s);
   for (; n > 0; --n) {
     auto [m, err] = buf.write_string(fus);
@@ -65,7 +65,7 @@ std::string fill_string(std::string const& name, buffer& buf, std::string s, int
   return s;
 }
 
-std::string fill_bytes(std::string const& name, buffer& buf, std::string s, int n, std::span<uint8_t> fub) {
+std::string fill_bytes(std::string const& name, buffer& buf, std::string s, long n, std::span<uint8_t> fub) {
   check(name+" (fill 1)", buf, s);
   for (; n > 0; --n) {
     auto [m, err] = buf.write(fub);
@@ -225,7 +225,7 @@ TEST_CASE("Buffer read_from", "[bytes]") {
 
 struct throwing_reader {
   bool should_throw = false;
-  std::pair<int, std::error_code> read(std::span<uint8_t>) {
+  std::pair<long, std::error_code> read(std::span<uint8_t>) {
     if (should_throw) {
       throw std::exception{};
     }
@@ -248,7 +248,7 @@ TEST_CASE("Buffer read from throwing reader", "[bytes]") {
 }
 
 struct negative_reader {
-  std::pair<int, std::error_code> read(std::span<uint8_t>) {
+  std::pair<long, std::error_code> read(std::span<uint8_t>) {
     return {-1, nil};
   }
 };
@@ -282,7 +282,7 @@ TEST_CASE("Buffer rune I/O", "[bytes]") {
     auto size = std::distance(begin, unicode::utf8::encode(r, begin));
     auto [n_bytes, err] = buf.write_rune(r);
     REQUIRE(err == nil);
-    REQUIRE(n_bytes == static_cast<int>(size));
+    REQUIRE(n_bytes == static_cast<long>(size));
     n += size;
   }
 
@@ -296,7 +296,7 @@ TEST_CASE("Buffer rune I/O", "[bytes]") {
     auto size = std::distance(begin, unicode::utf8::encode(r, begin));
     auto [nr, n_bytes, err] = buf.read_rune();
     REQUIRE(nr == r);
-    REQUIRE(n_bytes == static_cast<int>(size));
+    REQUIRE(n_bytes == static_cast<long>(size));
     REQUIRE(err == nil);
   }
 
@@ -317,7 +317,7 @@ TEST_CASE("Buffer rune I/O", "[bytes]") {
     auto [r2, n_bytes, err] = buf.read_rune();
     REQUIRE(r1 == r2);
     REQUIRE(r1 == r);
-    REQUIRE(n_bytes == static_cast<int>(size));
+    REQUIRE(n_bytes == static_cast<long>(size));
     REQUIRE(err == nil);
   }
 }
@@ -344,8 +344,8 @@ TEST_CASE("Buffer next", "[bytes]") {
         if (want > j-i) {
           want = j - i;
         }
-        REQUIRE(static_cast<int>(bb.size()) == want);
-        for (auto l = 0; l < static_cast<int>(bb.size()); ++l) {
+        REQUIRE(static_cast<long>(bb.size()) == want);
+        for (auto l = 0; l < static_cast<long>(bb.size()); ++l) {
           REQUIRE(bb[l] == static_cast<uint8_t>(l+i));
         }
       }

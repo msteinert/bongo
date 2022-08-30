@@ -25,42 +25,42 @@ To> constexpr bit_cast(const From& src) noexcept {
   return cast.to;
 }
 
-constexpr auto trailing_zeros(unsigned v) -> int {
+constexpr auto trailing_zeros(unsigned v) -> long {
   if (v == 0) {
     return sizeof (unsigned) * CHAR_BIT;
   }
   return __builtin_ctz(v);
 }
 
-constexpr auto trailing_zeros(long unsigned v) -> int {
+constexpr auto trailing_zeros(long unsigned v) -> long {
   if (v == 0) {
     return sizeof (long unsigned) * CHAR_BIT;
   }
   return __builtin_ctzl(v);
 }
 
-constexpr auto trailing_zeros(long long unsigned v) -> int {
+constexpr auto trailing_zeros(long long unsigned v) -> long {
   if (v == 0) {
     return sizeof (long long unsigned) * CHAR_BIT;
   }
   return __builtin_ctzll(v);
 }
 
-constexpr auto leading_zeros(unsigned v) -> int {
+constexpr auto leading_zeros(unsigned v) -> long {
   if (v == 0) {
     return sizeof (unsigned) * CHAR_BIT;
   }
   return __builtin_clz(v);
 }
 
-constexpr auto leading_zeros(long unsigned v) -> int {
+constexpr auto leading_zeros(long unsigned v) -> long {
   if (v == 0) {
     return sizeof (long unsigned) * CHAR_BIT;
   }
   return __builtin_clzl(v);
 }
 
-constexpr auto leading_zeros(long long unsigned v) -> int {
+constexpr auto leading_zeros(long long unsigned v) -> long {
   if (v == 0) {
     return sizeof (long long unsigned) * CHAR_BIT;
   }
@@ -71,7 +71,7 @@ template <
   typename T,
   typename = std::enable_if_t<std::is_integral_v<T> && std::is_unsigned_v<T>>
 >
-constexpr auto len(T v) -> int {
+constexpr auto len(T v) -> long {
   return std::numeric_limits<T>::digits - leading_zeros(v);
 }
 

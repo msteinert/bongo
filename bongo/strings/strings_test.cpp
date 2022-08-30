@@ -205,7 +205,7 @@ TEST_CASE("Test count", "[strings]") {
   auto test_cases = std::vector<std::tuple<
     std::string_view,
     std::string_view,
-    int
+    long
   >>{
     {"", "", 1},
     {"", "notempty", 0},
@@ -302,7 +302,7 @@ TEST_CASE("Test contains", "[strings]") {
 }
 
 TEST_CASE("Test repeat", "[strings]") {
-  auto test_cases = std::vector<std::tuple<std::string_view, std::string_view, int>>{
+  auto test_cases = std::vector<std::tuple<std::string_view, std::string_view, long>>{
     {"", "", 0},
     {"", "", 1},
     {"", "", 2},
@@ -319,7 +319,7 @@ TEST_CASE("Test split", "[strings]") {
   auto test_cases = std::vector<std::tuple<
     std::string_view,
     std::string_view,
-    int,
+    long,
     std::vector<std::string_view>
   >>{
     {"", "", -1, {}},
@@ -339,7 +339,7 @@ TEST_CASE("Test split", "[strings]") {
     {faces, "~", -1, {faces}},
     {"1 2 3 4", " ", 3, {"1", "2", "3 4"}},
     {"1 2", " ", 3, {"1", "2"}},
-    {"", "T", std::numeric_limits<int>::max() / 4, {""}},
+    {"", "T", std::numeric_limits<long>::max() / 4, {""}},
     {"\xff-\xff", "", -1, {"\xff", "-", "\xff"}},
     {"\xff-\xff", "-", -1, {"\xff", "\xff"}},
   };
@@ -360,7 +360,7 @@ TEST_CASE("Test split_after", "[strings]") {
   auto test_cases = std::vector<std::tuple<
     std::string_view,
     std::string_view,
-    int,
+    long,
     std::vector<std::string_view>
   >>{
     {abcd, "a", -1, {"a", "bcd"}},
@@ -414,7 +414,7 @@ TEST_CASE("Test replace", "[strings]") {
     std::string_view,
     std::string_view,
     std::string_view,
-    int,
+    long,
     std::string_view
   >>{
     {"hello", "l", "L", 0, "hello"},

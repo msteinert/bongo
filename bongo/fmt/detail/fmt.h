@@ -36,12 +36,12 @@ class fmt {
 
  public:
   fmt_flags flags = fmt_flags{};
-  int wid;
-  int prec;
+  long wid;
+  long prec;
 
   auto clear_flags() noexcept -> void;
-  auto write_padding(bytes::buffer& out, int n, bool zero) const -> void;
-  auto write_padding(bytes::buffer& out, int n) const -> void;
+  auto write_padding(bytes::buffer& out, long n, bool zero) const -> void;
+  auto write_padding(bytes::buffer& out, long n) const -> void;
   auto pad(bytes::buffer& out, std::span<uint8_t> b) const -> void;
   auto pad(bytes::buffer& out, std::string_view s) const -> void;
   auto truncate(std::string_view s) const noexcept -> std::string_view;
@@ -54,13 +54,13 @@ class fmt {
   auto format(T&& v, bytes::buffer& out) -> void;
 
   template <Integer T>
-  auto format(T&& v, int base, rune verb, std::string_view digits, bytes::buffer& out) -> void;
+  auto format(T&& v, long base, rune verb, std::string_view digits, bytes::buffer& out) -> void;
 
   template <Floating T>
   auto format(T&& v, bytes::buffer& out) -> void;
 
   template <Floating T>
-  auto format(T&& v, rune verb, int precision, bytes::buffer& out) -> void;
+  auto format(T&& v, rune verb, long precision, bytes::buffer& out) -> void;
 
   template <String T>
   auto format(T&& s, bytes::buffer& out) -> void;
@@ -105,7 +105,7 @@ auto fmt::format(T&& v, bytes::buffer& out) -> void {
 }
 
 template <Integer T>
-auto fmt::format(T&& v, int base, rune verb, std::string_view digits, bytes::buffer& out) -> void {
+auto fmt::format(T&& v, long base, rune verb, std::string_view digits, bytes::buffer& out) -> void {
   auto negative = std::is_signed_v<std::remove_cvref_t<T>> && v < 0;
   uint64_t u = negative ? -static_cast<int64_t>(v) : v;
 
@@ -113,7 +113,7 @@ auto fmt::format(T&& v, int base, rune verb, std::string_view digits, bytes::buf
   std::vector<uint8_t> intbuf;
   if (flags.wid_present | flags.prec_present) {
     auto width = 3 + wid + prec;
-    if (width > static_cast<int>(buf.size())) {
+    if (width > static_cast<long>(buf.size())) {
       intbuf.resize(width);
       buf = std::span{intbuf};
     }
@@ -165,7 +165,7 @@ auto fmt::format(T&& v, int base, rune verb, std::string_view digits, bytes::buf
   }
 
   buf[--i] = digits[u];
-  while (i > 0 && precision > static_cast<int>(buf.size()-i)) {
+  while (i > 0 && precision > static_cast<long>(buf.size()-i)) {
     buf[--i] = '0';
   }
 
@@ -213,7 +213,7 @@ auto fmt::format(T&& v, bytes::buffer& out) -> void {
 }
 
 template <Floating T>
-auto fmt::format(T&& v, rune verb, int precision, bytes::buffer& out) -> void {
+auto fmt::format(T&& v, rune verb, long precision, bytes::buffer& out) -> void {
   if (flags.prec_present) {
     precision = prec;
   }
@@ -222,23 +222,21 @@ auto fmt::format(T&& v, rune verb, int precision, bytes::buffer& out) -> void {
   auto buf = bytes::buffer{};
   buf.write_byte('+');
   strconv::format(v, std::back_inserter(buf), verb, precision);
-  auto num = buf.bytes();
-  if (num[1] == '-' || num[1] == '+') {
+  if (buf[1] == '-' || buf[1] == '+') {
     buf.read_byte();
-    num = buf.bytes();
   }
 
-  if (flags.space && num[0] == '+' && !flags.plus) {
-    num[0] = ' ';
+  if (flags.space && buf[0] == '+' && !flags.plus) {
+    buf[0] = ' ';
   }
 
-  if (num[1] == 'I' || num[1] == 'N') {
+  if (buf[1] == 'I' || buf[1] == 'N') {
     auto old_zero = flags.zero;
     flags.zero = false;
-    if (num[1] == 'N' && !flags.space && !flags.plus) {
-      num = num.subspan(1);
+    if (buf[1] == 'N' && !flags.space && !flags.plus) {
+      buf.read_byte();
     }
-    pad(out, num);
+    pad(out, buf.bytes());
     flags.zero = old_zero;
     return;
   }
@@ -260,26 +258,24 @@ auto fmt::format(T&& v, rune verb, int precision, bytes::buffer& out) -> void {
     auto has_decimal_point = false;
     auto saw_nonzero_digit = false;
 
-    for (size_t i = 1; i < num.size(); ++i) {
-      switch (num[i]) {
+    for (long i = 1; i < buf.size(); ++i) {
+      switch (buf[i]) {
       case '.':
         has_decimal_point = true;
         break;
       case 'p': case 'P':
-        tail.write(num.subspan(i));
+        tail.write(buf.bytes().subspan(i));
         buf.truncate(i);
-        num = buf.bytes();
         break;
       case 'e': case 'E':
         if (verb != 'x' && verb != 'X') {
-          tail.write(num.subspan(i));
+          tail.write(buf.bytes().subspan(i));
           buf.truncate(i);
-          num = buf.bytes();
           break;
         }
         [[fallthrough]];
       default:
-        if (num[i] != '0') {
+        if (buf[i] != '0') {
           saw_nonzero_digit = true;
         }
         if (saw_nonzero_digit == true) {
@@ -289,37 +285,34 @@ auto fmt::format(T&& v, rune verb, int precision, bytes::buffer& out) -> void {
     }
 
     if (!has_decimal_point) {
-      if (num.size() == 2 && num[1] == '0') {
+      if (buf.size() == 2 && buf[1] == '0') {
         --digits;
       }
       buf.write_byte('.');
-      num = buf.bytes();
     }
 
     while (digits > 0) {
       buf.write_byte('0');
-      num = buf.bytes();
       --digits;
     }
 
     buf.write(tail.bytes());
-    num = buf.bytes();
-    if (num[1] == '-' || num[1] == '+') {
-      num = num.subspan(1);
+    if (buf[1] == '-' || buf[1] == '+') {
+      buf.read_byte();
     }
   }
 
-  if (flags.plus || num[0] != '+') {
-    if (flags.zero && flags.wid_present && wid > static_cast<int>(num.size())) {
-      out.write_byte(num[0]);
-      write_padding(out, wid - num.size());
-      out.write(num.subspan(1));
+  if (flags.plus || buf[0] != '+') {
+    if (flags.zero && flags.wid_present && wid > static_cast<long>(buf.size())) {
+      out.write_byte(buf[0]);
+      write_padding(out, wid - buf.size());
+      out.write(buf.bytes().subspan(1));
       return;
     }
-    pad(out, num);
+    pad(out, buf.bytes());
     return;
   }
-  pad(out, num.subspan(1));
+  pad(out, buf.bytes().subspan(1));
 }
 
 template <String T>
@@ -425,7 +418,7 @@ auto fmt::format_unicode(T&& v, bytes::buffer& out) -> void {
   if (flags.prec_present && prec > 4) {
     precision = prec;
     auto width = 2 + precision + 2 + unicode::utf8::utf_max + 1;
-    if (width > static_cast<int>(buf.size())) {
+    if (width > static_cast<long>(buf.size())) {
       intbuf.resize(width);
       buf = std::span{intbuf};
     }

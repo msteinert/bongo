@@ -13,7 +13,7 @@ using namespace std::string_view_literals;
 namespace bongo::strconv {
 
 TEST_CASE("Format floating point", "[strconv]") {
-  auto test_cases = std::vector<std::tuple<double, char, int, std::string_view>>{
+  auto test_cases = std::vector<std::tuple<double, char, long, std::string_view>>{
     {1, 'e', 5, "1.00000e+00"},
     {1, 'f', 5, "1.00000"},
     {1, 'g', 5, "1"},

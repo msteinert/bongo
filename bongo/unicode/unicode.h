@@ -20,4 +20,4 @@ enum {
   max_case
 };
 
-}  // namesapce bongo::unicode
+}  // namespace bongo::unicode

@@ -21,7 +21,7 @@ namespace bongo::io {
 class pipe {
   std::mutex wr_mutex_;
   chan<std::vector<uint8_t>> wr_chan_;
-  chan<int> rd_chan_;
+  chan<long> rd_chan_;
   std::once_flag once_;
   chan<std::monostate> done_;
   detail::once_error rd_err_;
@@ -30,9 +30,9 @@ class pipe {
  public:
   pipe() = default;
 
-  std::pair<int, std::error_code> read(std::span<uint8_t> b);
+  std::pair<long, std::error_code> read(std::span<uint8_t> b);
   std::error_code close_read(std::error_code err);
-  std::pair<int, std::error_code> write(std::span<uint8_t const> b);
+  std::pair<long, std::error_code> write(std::span<uint8_t const> b);
   std::error_code close_write(std::error_code err);
 
  private:
@@ -48,7 +48,7 @@ class pipe_reader {
   pipe_reader(std::shared_ptr<pipe> p)
       : p_{std::move(p)} {}
 
-  std::pair<int, std::error_code> read(std::span<uint8_t> data) {
+  std::pair<long, std::error_code> read(std::span<uint8_t> data) {
     return p_->read(data);
   }
 
@@ -69,7 +69,7 @@ class pipe_writer {
   pipe_writer(std::shared_ptr<pipe> p)
       : p_{std::move(p)} {}
 
-  std::pair<int, std::error_code> write(std::span<uint8_t const> data) {
+  std::pair<long, std::error_code> write(std::span<uint8_t const> data) {
     return p_->write(data);
   }
 

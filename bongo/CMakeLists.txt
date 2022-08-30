@@ -2,6 +2,8 @@ include(GNUInstallDirs)
 set(CMAKE_INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/bongo)
 
 add_library(bongo STATIC
+  bufio/error.cpp
+  bufio/scan.cpp
   bytes/error.cpp
   bytes/buffer.cpp
   bytes/reader.cpp
@@ -26,7 +28,9 @@ add_library(bongo STATIC
   strings/error.cpp
   strings/reader.cpp
   strings/strings.cpp
-  sync/wait_group.cpp)
+  sync/wait_group.cpp
+  testing/error.cpp
+  testing/iotest/error.cpp)
 
 target_compile_definitions(bongo
   PRIVATE
@@ -51,6 +55,8 @@ target_link_libraries(bongo
 
 if(TARGET Catch2::Catch2)
   add_executable(bongo-test
+    bufio/bufio_test.cpp
+    bufio/scan_test.cpp
     bytes/buffer_test.cpp
     bytes/bytes_test.cpp
     bytes/reader_test.cpp
@@ -77,6 +83,7 @@ if(TARGET Catch2::Catch2)
     strings/reader_test.cpp
     strings/strings_test.cpp
     sync/wait_group_test.cpp
+    testing/iotest/reader_test.cpp
     time/timer_test.cpp
     unicode/utf16/utf16_test.cpp
     unicode/utf8/utf8_test.cpp)

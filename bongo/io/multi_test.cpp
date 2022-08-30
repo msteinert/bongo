@@ -29,10 +29,10 @@ void with_foo_bar(Function fn) {
 }
 
 template <typename MultiReader>
-void expect_read(MultiReader& mr, int size, std::string_view expected, std::error_code eerr) {
+void expect_read(MultiReader& mr, long size, std::string_view expected, std::error_code eerr) {
   auto buf = std::vector<uint8_t>(size);
   auto [n, gerr] = mr.read(buf);
-  CHECK(n == static_cast<int>(expected.size()));
+  CHECK(n == static_cast<long>(expected.size()));
   auto got = bytes::to_string(buf, n);
   CHECK(got == expected);
   CHECK(gerr == eerr);
@@ -56,6 +56,10 @@ TEST_CASE("Multi reader", "[io]") {
   });
 }
 
+TEST_CASE("Multi reader as writer", "[io]") {
+  // TODO
+}
+
 template <Writer T>
 void test_multi_writer(T& sink) {
   auto sha1 = sha1::hash{};
@@ -72,11 +76,13 @@ void test_multi_writer(T& sink) {
 }
 
 TEST_CASE("Multi writer", "[io]") {
+  // TODO
 }
 
 TEST_CASE("Multi writer string", "[io]") {
   auto b = bytes::buffer{};
   test_multi_writer(b);
+  // TODO
 }
 
 }  // namespace bongo::io

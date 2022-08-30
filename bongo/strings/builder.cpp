@@ -66,11 +66,11 @@ std::string_view builder::str() const {
   return std::string_view{buf_, size_};
 }
 
-std::pair<int, std::error_code> builder::write(std::span<uint8_t const> p) {
+std::pair<long, std::error_code> builder::write(std::span<uint8_t const> p) {
   ensure(p.size());
   std::copy(p.begin(), p.end(), buf_+size_);
   size_ += p.size();
-  return {static_cast<int>(p.size()), nil};
+  return {static_cast<long>(p.size()), nil};
 }
 
 std::error_code builder::write_byte(uint8_t b) {
@@ -79,7 +79,7 @@ std::error_code builder::write_byte(uint8_t b) {
   return nil;
 }
 
-std::pair<int, std::error_code> builder::write_rune(rune r) {
+std::pair<long, std::error_code> builder::write_rune(rune r) {
   if (static_cast<uint32_t>(r) < unicode::utf8::rune_self) {
     write_byte(static_cast<uint8_t>(r));
     return {1, nil};
@@ -91,7 +91,7 @@ std::pair<int, std::error_code> builder::write_rune(rune r) {
   return {n, nil};
 }
 
-std::pair<int, std::error_code> builder::write_string(std::string_view s) {
+std::pair<long, std::error_code> builder::write_string(std::string_view s) {
   ensure(s.size());
   std::copy(s.begin(), s.end(), buf_+size_);
   size_ += s.size();
@@ -105,4 +105,4 @@ void builder::ensure(size_t n) {
   }
 }
 
-}  // namesapce bongo::strings
+}  // namespace bongo::strings

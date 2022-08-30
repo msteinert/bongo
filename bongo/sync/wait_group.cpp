@@ -8,7 +8,7 @@
 
 namespace bongo::sync {
 
-void wait_group::add(int n) {
+void wait_group::add(long n) {
   std::unique_lock lock{mutex_};
   state_ += n;
   if (state_ < 0) {
@@ -31,4 +31,4 @@ void wait_group::wait() {
   }
 }
 
-}  // namesapce bongo::sync
+}  // namespace bongo::sync
