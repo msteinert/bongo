@@ -21,12 +21,12 @@ constexpr auto trim(std::string_view s, std::string_view cutset) -> std::string_
 
 constexpr auto trim_left(std::string_view s, std::string_view cutset) -> std::string_view;
 
-template <IndexFunction T>
+template <typename T> requires IndexFunction<T>
 constexpr auto trim_left(std::string_view s, T&& func) -> std::string_view;
 
 constexpr auto trim_right(std::string_view s, std::string_view cutset) -> std::string_view;
 
-template <IndexFunction T>
+template <typename T> requires IndexFunction<T>
 constexpr auto trim_right(std::string_view s, T&& func) -> std::string_view;
 
 constexpr auto trim_prefix(std::string_view s, std::string_view prefix) -> std::string_view;
@@ -53,7 +53,7 @@ constexpr auto has_prefix(std::string_view s, std::string_view prefix) -> bool;
 // Tests whether the string s ends with suffix.
 constexpr auto has_suffix(std::string_view s, std::string_view suffix) -> bool;
 
-template <MapFunction T>
+template <typename T> requires MapFunction<T>
 auto map(T&& mapping, std::string_view s) -> std::string;
 
 auto to_valid_utf8(std::string_view s, std::string_view replacement) -> std::string;
@@ -95,7 +95,7 @@ constexpr auto trim_left(std::string_view s, std::string_view cutset) -> std::st
   return detail::trim_left(s, cutset);
 }
 
-template <IndexFunction T>
+template <typename T> requires IndexFunction<T>
 constexpr auto trim_left(std::string_view s, T&& func) -> std::string_view {
   auto i = detail::index(s, std::move(func), false);
   if (i == std::string_view::npos) {
@@ -118,7 +118,7 @@ constexpr auto trim_right(std::string_view s, std::string_view cutset) -> std::s
   return detail::trim_right(s, cutset);
 }
 
-template <IndexFunction T>
+template <typename T> requires IndexFunction<T>
 constexpr auto trim_right(std::string_view s, T&& func) -> std::string_view {
   namespace utf8 = unicode::utf8;
   auto i = detail::last_index(s, std::move(func), false);
@@ -177,7 +177,7 @@ constexpr auto has_suffix(std::string_view s, std::string_view suffix) -> bool {
   return s.size() >= suffix.size() && s.substr(s.size()-suffix.size()) == suffix;
 }
 
-template <MapFunction T>
+template <typename T> requires MapFunction<T>
 auto map(T&& mapping, std::string_view s) -> std::string {
   namespace utf8 = unicode::utf8;
   auto b = builder{};

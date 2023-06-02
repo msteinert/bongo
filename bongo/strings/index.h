@@ -24,7 +24,7 @@ constexpr auto index(std::string_view s, uint8_t c) -> std::string_view::size_ty
 // std::string_view::npos if rune is not present in s.
 constexpr auto index(std::string_view s, rune r) -> std::string_view::size_type;
 
-template <IndexFunction T>
+template <typename T> requires IndexFunction<T>
 constexpr auto index(std::string_view s, T&& func) -> std::string_view::size_type;
 
 constexpr auto index_any(std::string_view s, std::string_view chars) -> std::string_view::size_type;
@@ -33,7 +33,7 @@ constexpr auto last_index(std::string_view s, std::string_view substr) -> std::s
 
 constexpr auto last_index(std::string_view s, uint8_t c) -> std::string_view::size_type;
 
-template <IndexFunction T>
+template <typename T> requires IndexFunction<T>
 constexpr auto last_index(std::string_view s, T&& func) -> std::string_view::size_type;
 
 constexpr auto last_index_any(std::string_view s, std::string_view chars) -> std::string_view::size_type;
@@ -102,7 +102,7 @@ constexpr auto index(std::string_view s, rune r) -> std::string_view::size_type 
   }
 }
 
-template <IndexFunction T>
+template <typename T> requires IndexFunction<T>
 constexpr auto index(std::string_view s, T&& func) -> std::string_view::size_type {
   return detail::index(s, std::move(func), true);
 }
@@ -174,7 +174,7 @@ constexpr auto last_index(std::string_view s, uint8_t c) -> std::string_view::si
   return s.find_last_of(c);
 }
 
-template <IndexFunction T>
+template <typename T> requires IndexFunction <T>
 constexpr auto last_index(std::string_view s, T&& func) -> std::string_view::size_type {
   return detail::last_index(s, std::move(func), true);
 }

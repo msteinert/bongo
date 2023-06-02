@@ -9,7 +9,7 @@
 
 namespace bongo::strings::detail {
 
-template <IndexFunction T>
+template <typename T> requires IndexFunction<T>
 constexpr auto index(std::string_view s, T&& func, bool truth) -> std::string_view::size_type {
   namespace utf8 = unicode::utf8;
   for (auto [i, r] : utf8::range{s}) {
@@ -20,7 +20,7 @@ constexpr auto index(std::string_view s, T&& func, bool truth) -> std::string_vi
   return std::string_view::npos;
 }
 
-template <IndexFunction T>
+template <typename T> requires IndexFunction<T>
 constexpr auto last_index(std::string_view s, T&& func, bool truth) -> std::string_view::size_type {
   namespace utf8 = unicode::utf8;
   for (std::string_view::size_type i = s.size(); i > 0;) {

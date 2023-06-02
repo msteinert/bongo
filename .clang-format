@@ -1,0 +1,8 @@
+---
+BasedOnStyle: Google
+AllowShortIfStatementsOnASingleLine: false
+BreakConstructorInitializers: BeforeComma
+ColumnLimit: 120
+IndentCaseLabels: false
+PackConstructorInitializers: Never
+...
